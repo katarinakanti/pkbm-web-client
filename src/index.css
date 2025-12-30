@@ -12,10 +12,30 @@ body {
   font-family: "Open Sans";
 }
 
-@theme {
-  --color-secondary: rgb(89, 133, 157);
+/* @theme {
   --color-primary: rgb(22, 144, 145);
+  --color-secondary: rgb(89, 133, 157);
   --color-background-light: rgb(242, 247, 253);
+} */
+@theme {
+  /* Primary brand color — learning, approachability, trust */
+  --color-primary: rgb(43, 172, 226);
+
+  /* Secondary — credibility, headers, serious content */
+  --color-secondary: rgb(0, 31, 77);
+
+  /* Accent — growth, success states, educational progress */
+  --color-accent: rgb(0, 122, 51);
+
+  /* Optional highlight — links, icons, callouts (use sparingly) */
+  --color-accent-blue: rgb(0, 84, 166);
+
+  /* Background — calm, readable, classroom-friendly */
+  --color-background-light: rgb(248, 251, 255);
+
+  /* Text defaults */
+  --color-text-primary: rgb(0, 31, 77);
+  --color-text-muted: rgb(90, 110, 130);
 }
 
 .noscrollbar {

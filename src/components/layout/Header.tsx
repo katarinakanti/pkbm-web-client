@@ -21,12 +21,21 @@ export function Header(props: HeaderProps) {
           : "bg-transparent"
       } transition transition-all py-4 flex items-center justify-between`}
     >
-      <Link to={"/"}>
-        <div className={`flex gap-2 place-items-center`}>
-          <img className="object-contain h-18" src={"/logoBudiman.png"} />
-          <div className="font-medium text-primary">
-            <div>YAYASAN BUDIMAN</div>
-            <div>DRESTANTA BATAM</div>
+      {/* LOGO */}
+      <Link to={"/"} className="group">
+        <div className="flex gap-3 items-center">
+          <div className="bg-white p-1.5 rounded-xl shadow-sm transition-transform group-hover:scale-105">
+            <img
+              className="object-contain h-10 md:h-12"
+              src="/logoBudiman.png"
+              alt="Logo"
+            />
+          </div>
+          <div
+            className={`font-bold leading-tight transition-colors duration-300`}
+          >
+            <div className="text-xs tracking-[0.2em] opacity-80">YAYASAN</div>
+            <div className="text-sm md:text-base">BUDIMAN DRESTANTA</div>
           </div>
         </div>
       </Link>
@@ -63,25 +72,23 @@ export function Header(props: HeaderProps) {
           >
             <img className="object-contain h-9" src={"/logoBudiman.png"} />
           </Link>
-          {/* HEADER DESKTOP */}
-          <div
-            className={`
-            hidden md:flex flex-row my-5
-            md:flex-1 md:items-center md:justify-center
-          `}
-          >
-            <Button variant="light" onPress={() => navigate(`/tentang-kami`)}>
-              Tentang Kami
-            </Button>
-            <Button variant="light" onPress={() => navigate(`/program`)}>
-              Program
-            </Button>
-            <Button variant="light" onPress={() => navigate(`/admisi`)}>
-              Admisi
-            </Button>
-            <Button variant="light" onPress={() => navigate(`/kontak`)}>
-              Kontak
-            </Button>
+          {/* DESKTOP MENU */}
+          <div className="hidden md:flex items-center justify-center flex-1 gap-2">
+            {[
+              { label: "Tentang Kami", path: "/tentang-kami" },
+              { label: "Program", path: "/program" },
+              { label: "Admisi", path: "/admisi" },
+              { label: "Kontak", path: "/kontak" },
+            ].map((item) => (
+              <Button
+                key={item.path}
+                variant="light"
+                className={`font-bold transition-colors text-secondary hover:text-primary`}
+                onPress={() => navigate(item.path)}
+              >
+                {item.label}
+              </Button>
+            ))}
           </div>
           {/* HEADER MOBILE */}
           {/* <div

@@ -6,6 +6,13 @@ import {
   useLocation,
 } from "react-router-dom";
 import { HomePage } from "./pages/homepage";
+import { TentangKami } from "./pages/tentang-kami";
+import { LoginPage } from "./pages/user/login";
+import { RegisterPage } from "./pages/user/register";
+import { ProgramPage } from "./pages/program";
+import { AdmisiPage } from "./pages/admisi";
+import { EnrollPage } from "./pages/user/enroll";
+import { UserDetailsPage } from "./pages/user/user-details";
 
 export default function App() {
   return (
@@ -13,7 +20,16 @@ export default function App() {
       router={createBrowserRouter([
         {
           element: <RootLayoutScrollToTop />,
-          children: [{ path: "/", element: <HomePage /> }],
+          children: [
+            { path: "/", element: <HomePage /> },
+            { path: "/tentang-kami", element: <TentangKami /> },
+            { path: "/login", element: <LoginPage /> },
+            { path: "/register", element: <RegisterPage /> },
+            { path: "/program", element: <ProgramPage /> },
+            { path: "/admisi", element: <AdmisiPage /> },
+            { path: "/enroll", element: <EnrollPage /> },
+            { path: "/user-details", element: <UserDetailsPage /> },
+          ],
         },
       ])}
     />
