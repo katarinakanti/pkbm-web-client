@@ -6,6 +6,7 @@ import {
   Instagram,
   Linkedin,
   Youtube,
+  Facebook,
 } from "lucide-react";
 
 export interface FooterProps {
@@ -47,16 +48,32 @@ export function Footer(props: FooterProps) {
 
           <div className="flex items-center gap-4">
             {[
-              { Icon: Instagram, href: "#" },
-              { Icon: Linkedin, href: "#" },
-              { Icon: Youtube, href: "#" },
+              {
+                Icon: () => (
+                  <img
+                    className="w-5 h-5 brightness-0 invert"
+                    src="https://www.svgrepo.com/show/500461/whatsapp.svg"
+                    alt="WA"
+                  />
+                ),
+                href: "https://wa.me/6281277653313",
+              },
+              {
+                Icon: Facebook,
+                href: "https://web.facebook.com/profile.php?id=100082845901246",
+              },
             ].map(({ Icon, href }, i) => (
               <Link
                 key={i}
                 to={href}
-                className="p-2 rounded-full bg-white/5 hover:bg-primary transition-colors text-white"
+                className="p-2 rounded-full bg-white/5 hover:bg-primary transition-all duration-300 text-white flex items-center justify-center"
               >
-                <Icon size={18} />
+                {/* Jika Icon adalah komponen (Lucide), panggil dengan size. Jika fungsi/img, render langsung */}
+                {typeof Icon === "function" && Icon.name === "" ? (
+                  <Icon />
+                ) : (
+                  <Icon size={18} />
+                )}
               </Link>
             ))}
           </div>
@@ -120,7 +137,7 @@ export function Footer(props: FooterProps) {
             </p>
 
             <Link
-              to="https://wa.me/6281277653313"
+              to="https://wa.me/628117778132"
               className="flex items-center gap-3 bg-[#25D366] hover:bg-[#20ba5a] transition-all px-6 py-3 rounded-full font-bold text-white shadow-lg shadow-green-900/20 self-start group"
             >
               <img
@@ -134,11 +151,11 @@ export function Footer(props: FooterProps) {
             <div className="space-y-3 pt-2">
               <div className="flex items-center gap-3 text-sm text-zinc-300">
                 <Mail size={18} className="text-primary" />
-                <span>admin@budimandrestanta.id</span>
+                <span>info.yayasanbdt@gmail.com</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-zinc-300">
                 <Phone size={18} className="text-primary" />
-                <span>+62 812-7765-3313</span>
+                <span>0811 777 8132</span>
               </div>
             </div>
           </div>
