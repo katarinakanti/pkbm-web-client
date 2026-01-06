@@ -13,6 +13,10 @@ import { ProgramPage } from "./pages/program";
 import { AdmisiPage } from "./pages/admisi";
 import { EnrollPage } from "./pages/user/enroll";
 import { UserDetailsPage } from "./pages/user/user-details";
+import { AxiosClient } from "./api/AxiosClient";
+import { base_url } from "./utility";
+
+AxiosClient.BaseURL.instance.set(base_url);
 
 export default function App() {
   return (

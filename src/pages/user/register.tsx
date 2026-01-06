@@ -5,14 +5,58 @@ import {
   CardBody,
   Select,
   SelectItem,
+  addToast,
 } from "@heroui/react";
 import { Link } from "react-router";
-import { User, Mail, Lock, GraduationCap, ArrowRight } from "lucide-react";
+import { User, Mail, Lock, GraduationCap, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Layout } from "../../components/layout/Layout";
+import { useState } from "react";
+import { UserUtility } from "../../utility";
+import { AxiosClient } from "../../api/AxiosClient";
 
 export function RegisterPage() {
+  const [show_password, setShowPassword] = useState<boolean>(false);
+  const [loading_submit, setLoadingSubmit] = useState<boolean>(false);
+  const [re_password, setRePassword] = useState<string>("");
+  const [data, setData] = useState({
+    fullname: "",
+    email: "",
+    phone_number: "",
+    password: "",
+  });
+
+
+  async function register() {
+    if (data.password !== re_password) {
+      addToast({
+        title: "Konfirmasi kata sandi tidak cocok.",
+      });
+      return;
+    }
+    try {
+      setLoadingSubmit(true);
+      console.log("here")
+      const res = await AxiosClient.registerNewUser({
+        body: {
+          fullname: data.fullname,
+          email: data.email,
+          phone_number: data.phone_number,
+          password: data.password,
+        },
+      });
+      console.log("res", res)
+      UserUtility.setToken(res.token);
+    } catch (err: any) {
+      addToast({
+        title: err?.response?.data?.toString() ?? "Unknown Error",
+      });
+    } finally {
+      setLoadingSubmit(false);
+    }
+  }
+
   return (
-    <Layout parentClassName="bg-background-light min-h-screen">
+    <Layout className="bg-background-light min-h-screen">
       <div className="flex flex-col md:flex-row-reverse items-center justify-center p-6 gap-12">
         {/* RIGHT SIDE: Info */}
         <div className="hidden md:flex flex-col gap-6 max-w-md">
@@ -55,67 +99,93 @@ export function RegisterPage() {
               </p>
             </div>
 
-            <form className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form
+              className="grid grid-cols-1 md:grid-cols-2 gap-4"
+              onSubmit={e => {
+                // console.log("submitted", data)
+                e.preventDefault();
+                register();
+              }}
+            >
               <Input
                 type="text"
+                value={data.fullname}
+                onChange={e => setData(d => ({ ...d, fullname: e.target.value }))}
                 label="Nama Lengkap"
                 placeholder="Contoh: Maudy Ayunda"
                 labelPlacement="outside"
                 startContent={<User size={18} className="text-zinc-400" />}
                 variant="bordered"
                 className="md:col-span-2 font-medium"
+                required
               />
               <Input
                 type="email"
+                value={data.email}
+                onChange={e => setData(d => ({ ...d, email: e.target.value }))}
                 label="Email"
                 placeholder="nama@email.com"
                 labelPlacement="outside"
                 startContent={<Mail size={18} className="text-zinc-400" />}
                 variant="bordered"
                 className="md:col-span-2 font-medium"
+                required
               />
-              <Select
-                label="Pilihan Program"
-                placeholder="Pilih Paket"
-                labelPlacement="outside"
-                variant="bordered"
-                className="font-medium"
-              >
-                <SelectItem key="a">Paket A (SD)</SelectItem>
-                <SelectItem key="b">Paket B (SMP)</SelectItem>
-                <SelectItem key="c">Paket C (SMA)</SelectItem>
-              </Select>
               <Input
                 type="tel"
+                value={data.phone_number}
+                onChange={e => setData(d => ({ ...d, phone_number: e.target.value }))}
                 label="No. WhatsApp"
                 placeholder="0812..."
                 labelPlacement="outside"
                 variant="bordered"
-                className="font-medium"
+                className="md:col-span-2 font-medium"
+                required
               />
               <Input
-                type="password"
+                className="md:col-span-2 font-medium"
                 label="Kata Sandi"
+                value={data.password}
+                onChange={e => setData(d => ({ ...d, password: e.target.value }))}
                 placeholder="Min. 8 Karakter"
                 labelPlacement="outside"
                 startContent={<Lock size={18} className="text-zinc-400" />}
                 variant="bordered"
-                className="font-medium"
+                endContent={
+                  show_password ? (
+                    <Eye size={20} onClick={() => setShowPassword(false)} />
+                  ) : (
+                    <EyeOff size={20} onClick={() => setShowPassword(true)} />
+                  )
+                }
+                type={show_password ? "" : "password"}
+                required
+                autoComplete="new-password"
               />
               <Input
-                type="password"
-                label="Konfirmasi Sandi"
-                placeholder="Ulangi sandi"
+                className="md:col-span-2 font-medium"
+                value={re_password}
+                onChange={e => setRePassword(e.target.value)}
+                label="Konfirmasi Kata Sandi"
                 labelPlacement="outside"
                 startContent={<Lock size={18} className="text-zinc-400" />}
                 variant="bordered"
-                className="font-medium"
+                endContent={
+                  show_password ? (
+                    <Eye size={20} onClick={() => setShowPassword(false)} />
+                  ) : (
+                    <EyeOff size={20} onClick={() => setShowPassword(true)} />
+                  )
+                }
+                type={show_password ? "" : "password"}
+                required
+                autoComplete="new-password"
               />
 
               <div className="md:col-span-2 pt-4">
                 <Button
-                  as={Link}
-                  to="/enroll"
+                  type="submit"
+                  isLoading={loading_submit}
                   className="w-full bg-primary text-white font-bold py-7 text-lg rounded-xl shadow-lg shadow-primary/20"
                 >
                   Daftar Sekarang <ArrowRight size={20} />
