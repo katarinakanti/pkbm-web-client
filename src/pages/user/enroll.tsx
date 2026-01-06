@@ -25,8 +25,10 @@ import {
 } from "lucide-react";
 import { Layout } from "../../components/layout/Layout";
 import { Link } from "react-router-dom";
+import { UserUtility } from "../../utility";
 
 export function EnrollPage() {
+  UserUtility.redirectIfNotLogin();
   const [step, setStep] = useState(1);
 
   const nextStep = () => setStep((prev) => Math.min(prev + 1, 3));

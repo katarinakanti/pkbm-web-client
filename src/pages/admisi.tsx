@@ -85,7 +85,7 @@ export function AdmisiPage() {
             </div>
             <Button
               as={Link}
-              to="/register"
+              to="/enroll"
               className="bg-secondary text-white font-black px-10 py-8 rounded-2xl text-xl shadow-xl hover:scale-105 transition-transform group"
             >
               Klik Untuk Daftar Online
@@ -196,7 +196,7 @@ export function AdmisiPage() {
                   <div className="pt-4">
                     <Button
                       as="a"
-                      href="https://wa.me/6281277653313"
+                      href="https://wa.me/628117778132"
                       className="w-full bg-primary text-white font-black h-16 rounded-2xl shadow-lg shadow-primary/20 text-lg group"
                     >
                       Hubungi Admin

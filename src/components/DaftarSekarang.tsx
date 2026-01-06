@@ -19,14 +19,14 @@ export function DaftarSekarang() {
         <div className="flex flex-col justify-center gap-4">
           <Button
             as={Link}
-            to="/login"
+            to="/enroll"
             className=" self-center bg-secondary text-white font-bold rounded-full px-12 py-8 text-xl hover:bg-secondary/90 shadow-xl shadow-secondary/20"
           >
             Daftar Sekarang <ArrowRight className="ml-2" />
           </Button>
           <Button
             as={Link}
-            to="/kontak"
+            to="https://wa.me/628117778132"
             variant="bordered"
             className="self-center border-white/50 text-white font-bold text-xl px-10 py-8 rounded-2xl backdrop-blur-sm hover:bg-white/10 transition-all"
           >

@@ -7,7 +7,7 @@ import { User } from "./api/model/table/User";
 export const base_url = import.meta.env.VITE_API_URL ?? 'http://localhost:7000';
 
 export interface LoaderData {
-  user: User
+  user: User | null;
 }
 
 export namespace UserUtility {
@@ -33,14 +33,14 @@ export namespace UserUtility {
   }
 
   export function redirectIfHasLogin(to: string = '/') {
-    console.log("redirect to /")
+    // console.log("redirect to /")
     if (getToken()) {
       window.location.href = to;
     }
   }
 
   export function redirectIfNotLogin(to: string = '/login') {
-    console.log("redirect to login")
+    // console.log("redirect to login")
     if (!getToken()) {
       window.location.href = to;
     }
