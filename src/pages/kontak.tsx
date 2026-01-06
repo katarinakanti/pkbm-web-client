@@ -1,13 +1,6 @@
-import {
-  Mail,
-  MapPin,
-  Clock,
-  Send,
-  Facebook,
-  ExternalLink,
-} from "lucide-react";
+import { Mail, MapPin, Clock, Facebook, ExternalLink } from "lucide-react";
 import { Layout } from "../components/layout/Layout";
-import { Button, Card, CardBody, Input, Textarea } from "@heroui/react";
+import { Button, Card, CardBody } from "@heroui/react";
 import { Link } from "react-router";
 import { DaftarSekarang } from "../components/DaftarSekarang";
 

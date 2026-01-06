@@ -16,6 +16,7 @@ import { UserDetailsPage } from "./pages/user/user-details";
 import { AxiosClient } from "./api/AxiosClient";
 import { base_url, LoaderData, UserUtility } from "./utility";
 import { KontakPage } from "./pages/kontak";
+import { PaymentPage } from "./pages/user/payment";
 
 AxiosClient.BaseURL.instance.set(base_url);
 
@@ -89,6 +90,11 @@ export default function App() {
             {
               path: "/user-details",
               element: <UserDetailsPage />,
+              loader: loaderUserProfile,
+            },
+            {
+              path: "/payment",
+              element: <PaymentPage />,
               loader: loaderUserProfile,
             },
           ],

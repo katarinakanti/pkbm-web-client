@@ -82,12 +82,12 @@ export function UserDetailsPage() {
                       PKBM Budiman Drestanta.
                     </p>
                   </div>
-                  <div className="text-4xl md:text-5xl font-black tracking-tighter text-primary bg-white/5 px-8 py-4 rounded-3xl border border-white/10">
+                  {/* <div className="text-4xl md:text-5xl font-black tracking-tighter text-primary bg-white/5 px-8 py-4 rounded-3xl border border-white/10">
                     {formatTime(timeLeft)}
                   </div>
                   <p className="text-xs uppercase tracking-[0.2em] text-white/40 font-bold">
                     Waktu Estimasi Hasil Keluar
-                  </p>
+                  </p> */}
                 </CardBody>
               </Card>
             ) : (
@@ -130,10 +130,12 @@ export function UserDetailsPage() {
                   </div>
 
                   <Button
+                    as={Link}
+                    to="/payment"
                     className="w-full bg-secondary text-white font-black h-16 rounded-2xl text-lg shadow-xl shadow-secondary/20"
                     endContent={<Download size={20} />}
                   >
-                    Unduh Bukti Penerimaan
+                    Lunaskan Biaya Pendaftaran
                   </Button>
                 </CardBody>
               </Card>
