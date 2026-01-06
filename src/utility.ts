@@ -33,12 +33,14 @@ export namespace UserUtility {
   }
 
   export function redirectIfHasLogin(to: string = '/') {
+    console.log("redirect to /")
     if (getToken()) {
       window.location.href = to;
     }
   }
 
   export function redirectIfNotLogin(to: string = '/login') {
+    console.log("redirect to login")
     if (!getToken()) {
       window.location.href = to;
     }

@@ -1,9 +1,17 @@
-import { Button, Input, Checkbox, Card, CardBody } from "@heroui/react";
+import { Button, Input, Checkbox, Card, CardBody, addToast } from "@heroui/react";
 import { Link } from "react-router";
 import { Mail, Lock } from "lucide-react";
 import { Layout } from "../../components/layout/Layout";
+import { useEffect } from "react";
 
 export function LoginPage() {
+  useEffect(() => {
+    const msg = localStorage.getItem("registrationSuccess");
+    if (msg) {
+      addToast({ title: msg });
+      localStorage.removeItem("registrationSuccess");
+    }
+  }, []);
   return (
     <Layout parentClassName="bg-background-light min-h-screen">
       <div className="flex flex-col md:flex-row items-center justify-center p-6 gap-12">

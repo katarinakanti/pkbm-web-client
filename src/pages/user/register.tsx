@@ -35,7 +35,7 @@ export function RegisterPage() {
     }
     try {
       setLoadingSubmit(true);
-      console.log("here")
+      // console.log("here")
       const res = await AxiosClient.registerNewUser({
         body: {
           fullname: data.fullname,
@@ -44,8 +44,12 @@ export function RegisterPage() {
           password: data.password,
         },
       });
-      console.log("res", res)
-      UserUtility.setToken(res.token);
+      // console.log("res", res)
+      // UserUtility.setToken(res.token);
+      // UserUtility.redirectIfHasLogin("/");
+      // UserUtility.redirectIfNotLogin("/login");
+      localStorage.setItem("registrationSuccess", "Registrasi berhasil! Silakan login.");
+      window.location.href = "/login";
     } catch (err: any) {
       addToast({
         title: err?.response?.data?.toString() ?? err?.message ?? "Unknown Error",
