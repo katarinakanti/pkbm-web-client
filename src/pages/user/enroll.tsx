@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Input,
   Button,
@@ -38,6 +38,7 @@ import { UserUtility } from "../../utility";
 import { UserApplicant } from "../../api/model/table/UserApplicant";
 import { Gender } from "../../api/model/enum/Gender";
 import { AxiosClient } from "../../api/AxiosClient";
+import moment from "moment";
 
 export function EnrollPage() {
   UserUtility.redirectIfNotLogin();
@@ -67,33 +68,8 @@ export function EnrollPage() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [jenisSiswa, setJenisSiswa] = useState<"siswa-tersimpan" | "siswa-baru">("siswa-baru");
   const [selectedApplicant, setSelectedApplicant] = useState<UserApplicant | null>(null);
-  const [savedApplicants, setSavedApplicants] = useState<UserApplicant[]>([
-    // Mock data - replace with API call
-    {
-      id: 1,
-      id_user: 1,
-      fullname: "Budi Santoso",
-      email: "budi@email.com",
-      phone_number: "081234567890",
-      address: "Jl. Merdeka No. 123",
-      gender: Gender.M,
-      birth_date: new Date("2010-05-15"),
-      birth_place: "Surabaya",
-      religion: "Islam",
-    },
-    {
-      id: 2,
-      id_user: 2,
-      fullname: "Siti Nurhaliza",
-      email: "siti@email.com",
-      phone_number: "081298765432",
-      address: "Jl. Pahlawan No. 45",
-      gender: Gender.F,
-      birth_date: new Date("2011-08-20"),
-      birth_place: "Jakarta",
-      religion: "Islam",
-    },
-  ]);
+  const [savedApplicants, setSavedApplicants] = useState<UserApplicant[]>([]);
+  const [loadingApplicants, setLoadingApplicants] = useState<boolean>(false);
   // Form for new applicant
   const [newApplicant, setNewApplicant] = useState<UserApplicant>({
     id: 0,
@@ -107,6 +83,30 @@ export function EnrollPage() {
     birth_place: "",
     religion: "",
   });
+
+  // Fetch user applicants on component mount
+  useEffect(() => {
+    fetchUserApplicants();
+  }, []);
+
+  async function fetchUserApplicants() {
+    try {
+      setLoadingApplicants(true);
+      const response = await AxiosClient.userGetUserApplicantsList({
+        headers: {
+          authorization: UserUtility.getAuthHeader(),
+        },
+      });
+      setSavedApplicants(response || []);
+    } catch (err: any) {
+      addToast({
+        title: err?.response?.data?.toString() ?? err?.message ?? "Gagal memuat data siswa",
+        color: "danger",
+      });
+    } finally {
+      setLoadingApplicants(false);
+    }
+  }
 
   // const nextStep = () => setStep((prev) => Math.min(prev + 1, 3));
   const nextStep = () => {
@@ -166,17 +166,80 @@ export function EnrollPage() {
     onClose();
   };
 
-  const handleCreateNewApplicant = () => {
-    // TODO: API call to create new applicant
-    const newId = savedApplicants.length + 1;
-    const createdApplicant = { ...newApplicant, id: newId };
-    setSavedApplicants([...savedApplicants, createdApplicant]);
-    setSelectedApplicant(createdApplicant);
-    setFormData((prev) => ({
-      ...prev,
-      id_user_applicant: newId,
-    }));
-    onClose();
+  const handleCreateNewApplicant = async () => {
+    try {
+      // Validate required fields
+      if (!newApplicant.fullname || !newApplicant.email || !newApplicant.phone_number || !newApplicant.birth_date) {
+        addToast({
+          title: "Mohon lengkapi semua field yang wajib diisi",
+          color: "danger",
+        });
+        return;
+      }
+
+      // Validate birth_date is a valid Date
+      if (!(newApplicant.birth_date instanceof Date) || isNaN(newApplicant.birth_date.getTime())) {
+        addToast({
+          title: "Tanggal lahir tidak valid",
+          color: "danger",
+        });
+        return;
+      }
+
+      // API call to create new applicant
+      const response = await AxiosClient.userCreateUserApplicant({
+        headers: {
+          authorization: UserUtility.getAuthHeader(),
+        },
+        body: {
+          fullname: newApplicant.fullname,
+          email: newApplicant.email,
+          phone_number: newApplicant.phone_number,
+          address: newApplicant.address || "",
+          gender: newApplicant.gender,
+          birth_date: parseInt(moment(newApplicant.birth_date).format('YYYYMMDD')), // Convert to YYYYMMDD number
+          birth_place: newApplicant.birth_place || "",
+          religion: newApplicant.religion || "",
+        },
+      });
+
+      // Set the newly created applicant as selected
+      setSelectedApplicant(response);
+      setFormData((prev) => ({
+        ...prev,
+        id_user_applicant: response.id,
+      }));
+
+      // Refresh the list of applicants
+      await fetchUserApplicants();
+
+      // Close modal
+      onClose();
+
+      // Reset form
+      setNewApplicant({
+        id: 0,
+        id_user: 0,
+        fullname: "",
+        email: "",
+        phone_number: "",
+        address: "",
+        gender: Gender.M,
+        birth_date: new Date(),
+        birth_place: "",
+        religion: "",
+      });
+
+      addToast({
+        title: "Siswa berhasil ditambahkan",
+        color: "success",
+      });
+    } catch (err: any) {
+      addToast({
+        title: err?.response?.data?.toString() ?? err?.message ?? "Gagal menambahkan siswa",
+        color: "danger",
+      });
+    }
   };
 
   const StepIndicator = () => (
@@ -545,7 +608,7 @@ export function EnrollPage() {
               </Radio>
             </RadioGroup>
             {jenisSiswa === "siswa-tersimpan" && (
-              <div className="rounded-2xl bg-blue-50/15 p-3 border border-zinc-100 max-h-[400px] overflow-y-auto">
+              <div className="rounded-2xl bg-blue-50/15 p-3 border b  b order-zinc-100 max-h-[400px] overflow-y-auto">
                 <div className="space-y-3">
                   {savedApplicants.map((applicant) => (
                     <div
@@ -567,7 +630,7 @@ export function EnrollPage() {
                               <div>📧 {applicant.email}</div>
                               <div>📱 {applicant.phone_number}</div>
                               <div>👤 {applicant.gender === "M" ? "Laki-laki" : "Perempuan"}</div>
-                              <div>📅 {new Date(applicant.birth_date).toLocaleDateString("id-ID")}</div>
+                              <div>📅 {moment(applicant.birth_date).format('DD MMMM YYYY')}</div>
                             </div>
                           </div>
                         </div>
@@ -619,8 +682,8 @@ export function EnrollPage() {
                     value={newApplicant.gender}
                     onValueChange={(value) => setNewApplicant({ ...newApplicant, gender: value as Gender })}
                   >
-                    <Radio value="L">Laki-laki</Radio>
-                    <Radio value="P">Perempuan</Radio>
+                    <Radio value="M">Laki-laki</Radio>
+                    <Radio value="F">Perempuan</Radio>
                   </RadioGroup>
                   <Input
                     label="Tempat Lahir"
@@ -636,8 +699,15 @@ export function EnrollPage() {
                     variant="bordered"
                     labelPlacement="outside"
                     isRequired
-                    value={newApplicant.birth_date.toISOString().split('T')[0]}
-                    onValueChange={(value) => setNewApplicant({ ...newApplicant, birth_date: new Date(value) })}
+                    value={newApplicant.birth_date instanceof Date && !isNaN(newApplicant.birth_date.getTime())
+                      ? moment(newApplicant.birth_date).format('YYYY-MM-DD')
+                      : ''}
+                    onValueChange={(value) => {
+                      const date = new Date(value);
+                      if (!isNaN(date.getTime())) {
+                        setNewApplicant({ ...newApplicant, birth_date: date });
+                      }
+                    }}
                   />
                   <Select
                     label="Agama"
