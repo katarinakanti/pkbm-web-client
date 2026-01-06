@@ -2,9 +2,17 @@ import { Button, Input, Checkbox, Card, CardBody, addToast } from "@heroui/react
 import { Link } from "react-router";
 import { Mail, Lock } from "lucide-react";
 import { Layout } from "../../components/layout/Layout";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { AxiosClient } from "../../api/AxiosClient";
+import { UserUtility } from "../../utility";
 
 export function LoginPage() {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [show_password, setShowPassword] = useState<boolean>(false);
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+
+
   useEffect(() => {
     const msg = localStorage.getItem("registrationSuccess");
     if (msg) {
@@ -12,6 +20,23 @@ export function LoginPage() {
       localStorage.removeItem("registrationSuccess");
     }
   }, []);
+
+  async function login() {
+    try {
+      setLoading(true);
+      const res = await AxiosClient.loginUser({
+        body: { email, password }
+      });
+      UserUtility.setToken(res.token);
+      UserUtility.redirectIfHasLogin('/');
+    } catch (err: any) {
+      addToast({
+        title: err?.response?.data?.toString() ?? 'Unknown Error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
   return (
     <Layout parentClassName="bg-background-light min-h-screen">
       <div className="flex flex-col md:flex-row items-center justify-center p-6 gap-12">
@@ -44,6 +69,9 @@ export function LoginPage() {
 
             <form className="space-y-8">
               <Input
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                onKeyUp={e => e.key === 'Enter' && login()}
                 type="email"
                 label="Email"
                 placeholder="nama@email.com"
@@ -53,6 +81,9 @@ export function LoginPage() {
                 className="font-medium"
               />
               <Input
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                onKeyUp={e => e.key === 'Enter' && login()}
                 type="password"
                 label="Kata Sandi"
                 placeholder="Masukkan kata sandi"
@@ -77,7 +108,10 @@ export function LoginPage() {
                 </Link>
               </div> */}
 
-              <Button className="w-full bg-secondary text-white font-bold py-6 text-lg rounded-xl shadow-lg shadow-secondary/20">
+              <Button
+                isLoading={loading}
+                onPress={login}
+                className="w-full bg-secondary text-white font-bold py-6 text-lg rounded-xl shadow-lg shadow-secondary/20">
                 Masuk Sekarang
               </Button>
             </form>
