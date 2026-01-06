@@ -16,6 +16,7 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
+  addToast,
 } from "@heroui/react";
 import {
   User,
@@ -36,9 +37,11 @@ import { Link } from "react-router-dom";
 import { UserUtility } from "../../utility";
 import { UserApplicant } from "../../api/model/table/UserApplicant";
 import { Gender } from "../../api/model/enum/Gender";
+import { AxiosClient } from "../../api/AxiosClient";
 
 export function EnrollPage() {
   UserUtility.redirectIfNotLogin();
+  const [loading_submit, setLoadingSubmit] = useState<boolean>(false);
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     id_user_applicant: undefined as number | undefined,
@@ -48,6 +51,7 @@ export function EnrollPage() {
     grade_terakhir: "",
     asal_sekolah: "",
     student_status: "BARU",
+    alasan_pindah: "",
     parent_fullname: "",
     parent_phone: "",
     parent_email: "",
@@ -104,7 +108,39 @@ export function EnrollPage() {
     religion: "",
   });
 
-  const nextStep = () => setStep((prev) => Math.min(prev + 1, 3));
+  // const nextStep = () => setStep((prev) => Math.min(prev + 1, 3));
+  const nextStep = () => {
+    // Validate step 1: Check if student is selected
+    if (step === 1) {
+      if (!selectedApplicant) {
+        addToast({
+          title: "Silakan pilih atau tambah siswa dahulu",
+          color: "danger",
+        });
+        return;
+      }
+      if (!formData.application_type || !formData.nik || !formData.student_status || !formData.pendidikan_terakhir || !formData.grade_terakhir) {
+        addToast({
+          title: "Mohon lengkapi semua field yang wajib diisi",
+          color: "danger",
+        });
+        return;
+      }
+    }
+
+    // Validate step 2
+    if (step === 2) {
+      if (!formData.parent_fullname || !formData.parent_phone || !formData.parent_email) {
+        addToast({
+          title: "Mohon lengkapi semua field yang wajib diisi",
+          color: "danger",
+        });
+        return;
+      }
+    }
+
+    setStep((prev) => Math.min(prev + 1, 3));
+  };
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
 
   const handleInputChange = (field: string, value: any) => {
@@ -169,6 +205,30 @@ export function EnrollPage() {
     </div>
   );
 
+  async function submitApplication() {
+    try {
+      setLoadingSubmit(true);
+      console.log(formData)
+      // console.log("here")
+      // const res = await AxiosClient.registerNewUser({
+      //   body: {
+      //     fullname: data.fullname,
+      //     email: data.email,
+      //     phone_number: data.phone_number,
+      //     password: data.password,
+      //   },
+      // });
+      // localStorage.setItem("registrationSuccess", "Pendaftaran berhasil! Silakan login.");
+      // window.location.href = "/user-details";
+    } catch (err: any) {
+      addToast({
+        title: err?.response?.data?.toString() ?? err?.message ?? "Unknown Error",
+      });
+    } finally {
+      setLoadingSubmit(false);
+    }
+  }
+
   return (
     <Layout parentClassName="bg-background-light min-h-screen">
       <div className="container mx-auto px-6 py-12 max-w-4xl">
@@ -177,12 +237,17 @@ export function EnrollPage() {
           <CardBody>
             <StepIndicator />
 
-            <form className="space-y-8">
+            <form className="space-y-8"
+              onSubmit={e => {
+                // console.log("submitted", data)
+                e.preventDefault();
+                submitApplication();
+              }}>
               {/* STEP 1: DATA SISWA */}
               {step === 1 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4">
                   <div className="md:col-span-2 flex flex-col gap-2 p-5 border border-zinc-200 rounded-2xl bg-zinc-50/50">
-                    <div className="font-bold text-secondary">Pilih Siswa</div>
+                    <div className="font-bold text-secondary">Pilih Siswa<span className="text-danger">*</span></div>
                     <Button
                       onPress={onOpen}
                       variant="bordered"
@@ -220,10 +285,13 @@ export function EnrollPage() {
                     className="md:col-span-2 font-bold"
                     labelPlacement="outside"
                     placeholder="Pilih jenjang pendidikan"
+                    isRequired
+                    selectedKeys={formData.application_type ? [formData.application_type] : []}
+                    onSelectionChange={(keys) => handleInputChange("application_type", Array.from(keys)[0])}
                   >
-                    <SelectItem key="a">Paket A (Setara SD)</SelectItem>
-                    <SelectItem key="b">Paket B (Setara SMP)</SelectItem>
-                    <SelectItem key="c">Paket C (Setara SMA)</SelectItem>
+                    <SelectItem key="SD">Paket A (Setara SD)</SelectItem>
+                    <SelectItem key="SMP">Paket B (Setara SMP)</SelectItem>
+                    <SelectItem key="SMA">Paket C (Setara SMA)</SelectItem>
                   </Select>
 
                   {/* <Input
@@ -234,47 +302,34 @@ export function EnrollPage() {
                   /> */}
 
                   <Input
+                    label="NIK"
+                    placeholder="Nomor Induk Kependudukan"
+                    variant="bordered"
+                    labelPlacement="outside"
+                    isRequired
+                    value={formData.nik}
+                    onValueChange={(value) => handleInputChange("nik", value)}
+                  />
+
+                  <Input
                     label="NISN"
                     placeholder="Nomor Induk Siswa Nasional"
                     variant="bordered"
                     labelPlacement="outside"
                   />
 
-                  <Input
-                    label="Tempat Lahir"
-                    placeholder="Kota Kelahiran"
-                    variant="bordered"
-                    labelPlacement="outside"
-                  />
-                  <Input
-                    label="Tanggal Lahir"
-                    type="date"
-                    variant="bordered"
-                    labelPlacement="outside"
-                    startContent={<Calendar size={18} />}
-                  />
-
-                  <RadioGroup
-                    label="Jenis Kelamin"
-                    orientation="horizontal"
-                    color="primary"
-                  >
-                    <Radio value="L">Laki-laki</Radio>
-                    <Radio value="P">Perempuan</Radio>
-                  </RadioGroup>
-
                   <Select
-                    label="Agama"
+                    label="Status Pendaftar"
                     variant="bordered"
+                    className=""
                     labelPlacement="outside"
-                    placeholder="Pilih Agama"
+                    placeholder="Pilih status pendaftar"
+                    isRequired
+                    selectedKeys={formData.student_status ? [formData.student_status] : []}
+                    onSelectionChange={(keys) => handleInputChange("student_status", Array.from(keys)[0])}
                   >
-                    <SelectItem key="islam">Islam</SelectItem>
-                    <SelectItem key="kristen">Kristen</SelectItem>
-                    <SelectItem key="katolik">Katolik</SelectItem>
-                    <SelectItem key="hindu">Hindu</SelectItem>
-                    <SelectItem key="budha">Budha</SelectItem>
-                    <SelectItem key="khonghucu">Khonghucu</SelectItem>
+                    <SelectItem key="BARU">Baru</SelectItem>
+                    <SelectItem key="MUTASIPINDAHAN">Mutasi/Pindahan</SelectItem>
                   </Select>
 
                   <Input
@@ -282,15 +337,56 @@ export function EnrollPage() {
                     placeholder="Nama sekolah sebelumnya"
                     variant="bordered"
                     labelPlacement="outside"
-                    className="md:col-span-2"
+                    className=""
+                    value={formData.asal_sekolah}
+                    onValueChange={(value) => handleInputChange("asal_sekolah", value)}
                   />
-                  <Textarea
-                    label="Alamat Lengkap"
-                    placeholder="Nama jalan, Blok, No Rumah, RT/RW, Kelurahan, Kecamatan"
+
+                  <Select
+                    label="Pendidikan Terakhir"
+                    variant="bordered"
+                    className=""
+                    labelPlacement="outside"
+                    placeholder="Pilih jenjang pendidikan"
+                    isRequired
+                    selectedKeys={formData.pendidikan_terakhir ? [formData.pendidikan_terakhir] : []}
+                    onSelectionChange={(keys) => handleInputChange("pendidikan_terakhir", Array.from(keys)[0])}
+                  >
+                    <SelectItem key="TK">TK</SelectItem>
+                    <SelectItem key="SD">SD</SelectItem>
+                    <SelectItem key="SMP">SMP</SelectItem>
+                    <SelectItem key="SMA">SMA</SelectItem>
+                    <SelectItem key="S1">S1</SelectItem>
+                  </Select>
+                  <Input
+                    label="Grade Terakhir"
+                    placeholder="Grade terakhir sebelumnya"
                     variant="bordered"
                     labelPlacement="outside"
-                    className="md:col-span-2"
+                    className=""
+                    type="number"
+                    min="1"
+                    max="12"
+                    isRequired
+                    value={formData.grade_terakhir}
+                    onValueChange={(value) => {
+                      // Only allow integers
+                      const intValue = value.replace(/\D/g, '');
+                      handleInputChange("grade_terakhir", intValue);
+                    }}
                   />
+
+                  {formData.student_status === "MUTASIPINDAHAN" && (
+                    <Textarea
+                      label="Alasan Pindah"
+                      placeholder="Alasan mutasi/pindah sekolah"
+                      variant="bordered"
+                      labelPlacement="outside"
+                      className="md:col-span-2"
+                      value={formData.alasan_pindah || ""}
+                      onValueChange={(value) => handleInputChange("alasan_pindah", value)}
+                    />
+                  )}
                 </div>
               )}
 
@@ -298,25 +394,23 @@ export function EnrollPage() {
               {step === 2 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-right-4">
                   <Input
-                    label="Nama Lengkap Ayah"
-                    placeholder="Masukkan nama ayah"
+                    label="Nama Lengkap Orang Tua / Wali"
+                    placeholder="Masukkan nama lengkap"
                     variant="bordered"
                     labelPlacement="outside"
                     startContent={<User size={18} />}
-                  />
-                  <Input
-                    label="Nama Lengkap Ibu"
-                    placeholder="Masukkan nama ibu"
-                    variant="bordered"
-                    labelPlacement="outside"
-                    startContent={<User size={18} />}
+                    isRequired
+                    value={formData.parent_fullname}
+                    onValueChange={(value) => handleInputChange("parent_fullname", value)}
                   />
                   <Input
                     label="No. Telp / WhatsApp Orang Tua"
                     placeholder="Contoh: 0812..."
                     variant="bordered"
                     labelPlacement="outside"
-                    className="md:col-span-2"
+                    isRequired
+                    value={formData.parent_phone}
+                    onValueChange={(value) => handleInputChange("parent_phone", value)}
                   />
                   <Input
                     label="Email Aktif"
@@ -324,7 +418,9 @@ export function EnrollPage() {
                     placeholder="nama@email.com"
                     variant="bordered"
                     labelPlacement="outside"
-                    className="md:col-span-2"
+                    isRequired
+                    value={formData.parent_email}
+                    onValueChange={(value) => handleInputChange("parent_email", value)}
                   />
                 </div>
               )}
@@ -345,7 +441,7 @@ export function EnrollPage() {
                       { label: "Kartu Keluarga", required: true },
                       { label: "Akte Lahir Siswa", required: true },
                       { label: "KTP Orang Tua", required: true },
-                      { label: "Passfoto Terkini (3x4)", required: true },
+                      { label: "Pasfoto Terkini (3x4)", required: true },
                       { label: "Ijazah Terakhir", required: false },
                       { label: "Rapor Terakhir", required: false },
                     ].map((doc, i) => (
@@ -404,8 +500,8 @@ export function EnrollPage() {
                   </Button>
                 ) : (
                   <Button
-                    as={Link}
-                    to="/user-details"
+                    type="submit"
+                    isLoading={loading_submit}
                     className="bg-secondary text-white font-black px-10 py-7 rounded-2xl shadow-xl shadow-secondary/30"
                     endContent={<CheckCircle2 size={20} />}
                   >
