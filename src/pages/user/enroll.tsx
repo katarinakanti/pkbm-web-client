@@ -31,6 +31,7 @@ import {
   Info,
   UserPlus,
   Plus,
+  X,
 } from "lucide-react";
 import { Layout } from "../../components/layout/Layout";
 import { Link } from "react-router-dom";
@@ -43,10 +44,12 @@ import moment from "moment";
 export function EnrollPage() {
   UserUtility.redirectIfNotLogin();
   const [loading_submit, setLoadingSubmit] = useState<boolean>(false);
+  const [uploadingFiles, setUploadingFiles] = useState<{ [key: string]: boolean }>({});
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     id_user_applicant: undefined as number | undefined,
     application_type: "",
+    nisn: "",
     nik: "",
     pendidikan_terakhir: "",
     grade_terakhir: "",
@@ -56,13 +59,14 @@ export function EnrollPage() {
     parent_fullname: "",
     parent_phone: "",
     parent_email: "",
-    kk_url: null as File | null,
-    akta_lahir_url: null as File | null,
-    ktp_ortu_url: null as File | null,
-    photo_url: null as File | null,
-    selfie_url: null as File | null,
-    ijazah_terakhir_url: null as File | null,
-    raport_url: null as File | null,
+    kk_url: "",
+    akta_lahir_url: "",
+    ktp_ortu_url: "",
+    photo_url: "",
+    selfie_url: "",
+    ijazah_terakhir_url: "",
+    raport_url: "",
+    surat_pindah_url: "",
   });
 
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -100,7 +104,8 @@ export function EnrollPage() {
       setSavedApplicants(response || []);
     } catch (err: any) {
       addToast({
-        title: err?.response?.data?.toString() ?? err?.message ?? "Gagal memuat data siswa",
+        title: "Gagal memuat data siswa",
+        description: err?.response?.data?.toString() ?? err?.message ?? "Terjadi kesalahan",
         color: "danger",
       });
     } finally {
@@ -150,11 +155,82 @@ export function EnrollPage() {
     }));
   };
 
-  const handleFileChange = (field: string, file: File | null) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: file,
-    }));
+  // Upload file to server and return URL
+  async function uploadFile(file: File, fieldKey: string): Promise<string | null> {
+    try {
+      setUploadingFiles((prev) => ({ ...prev, [fieldKey]: true }));
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: UserUtility.getAuthHeader(),
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const data = await response.json();
+      
+      addToast({
+        title: "File berhasil diupload",
+        color: "success",
+      });
+
+      // Handle response - could be string directly or object with path
+      const filePath = typeof data === 'string' ? data : (data.url || data.file_url || data.path || data);
+      
+      // Return the path (e.g., "/uploads/file.png")
+      return filePath;
+    } catch (err: any) {
+      addToast({
+        title: "Gagal upload file",
+        description: err?.message ?? "Terjadi kesalahan saat mengupload file",
+        color: "danger",
+      });
+      return null;
+    } finally {
+      setUploadingFiles((prev) => ({ ...prev, [fieldKey]: false }));
+    }
+  }
+
+  const handleFileChange = async (field: string, file: File | null) => {
+    if (!file) {
+      handleInputChange(field, "");
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      addToast({
+        title: "Ukuran file terlalu besar",
+        description: "Ukuran file maksimal 10MB. File yang Anda pilih berukuran " + (file.size / (1024 * 1024)).toFixed(2) + "MB",
+        color: "danger",
+      });
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
+    if (!allowedTypes.includes(file.type)) {
+      addToast({
+        title: "Format file tidak didukung",
+        description: "Format file harus PDF, JPG, JPEG, atau PNG. File yang Anda pilih: " + file.type,
+        color: "danger",
+      });
+      return;
+    }
+
+    // Upload file and store URL
+    const uploadedUrl = await uploadFile(file, field);
+    if (uploadedUrl) {
+      handleInputChange(field, uploadedUrl);
+    }
   };
 
   const handleSelectApplicant = (applicant: UserApplicant) => {
@@ -171,7 +247,8 @@ export function EnrollPage() {
       // Validate required fields
       if (!newApplicant.fullname || !newApplicant.email || !newApplicant.phone_number || !newApplicant.birth_date) {
         addToast({
-          title: "Mohon lengkapi semua field yang wajib diisi",
+          title: "Data tidak lengkap",
+          description: "Mohon lengkapi semua field yang wajib diisi: Nama Lengkap, Email, No. Telepon, dan Tanggal Lahir",
           color: "danger",
         });
         return;
@@ -181,6 +258,7 @@ export function EnrollPage() {
       if (!(newApplicant.birth_date instanceof Date) || isNaN(newApplicant.birth_date.getTime())) {
         addToast({
           title: "Tanggal lahir tidak valid",
+          description: "Mohon masukkan tanggal lahir yang valid",
           color: "danger",
         });
         return;
@@ -236,7 +314,8 @@ export function EnrollPage() {
       });
     } catch (err: any) {
       addToast({
-        title: err?.response?.data?.toString() ?? err?.message ?? "Gagal menambahkan siswa",
+        title: "Gagal menambahkan siswa",
+        description: err?.response?.data?.toString() ?? err?.message ?? "Terjadi kesalahan saat menambahkan siswa",
         color: "danger",
       });
     }
@@ -271,26 +350,107 @@ export function EnrollPage() {
   async function submitApplication() {
     try {
       setLoadingSubmit(true);
-      console.log(formData)
-      // console.log("here")
-      // const res = await AxiosClient.registerNewUser({
-      //   body: {
-      //     fullname: data.fullname,
-      //     email: data.email,
-      //     phone_number: data.phone_number,
-      //     password: data.password,
-      //   },
-      // });
-      // localStorage.setItem("registrationSuccess", "Pendaftaran berhasil! Silakan login.");
-      // window.location.href = "/user-details";
+
+      // Validate required documents
+      if (!formData.kk_url || !formData.akta_lahir_url || !formData.ktp_ortu_url || !formData.photo_url || !formData.selfie_url) {
+        addToast({
+          title: "Dokumen belum lengkap",
+          description: "Mohon upload semua dokumen yang wajib: Kartu Keluarga, Akte Lahir, KTP Orang Tua, Pasfoto, dan Foto Selfie",
+          color: "danger",
+        });
+        return;
+      }
+
+      // // Validate required fields
+      // if (!formData.id_user_applicant || !formData.application_type || !formData.nik || !formData.parent_fullname || !formData.parent_phone || !formData.parent_email || !formData.pendidikan_terakhir || !formData.grade_terakhir || !formData.asal_sekolah || !formData.student_status) {
+      //   addToast({
+      //     title: "Mohon lengkapi semua field yang wajib diisi",
+      //     color: "danger",
+      //   });
+      //   return;
+      // }
+
+      // Validate id_user_applicant is set
+      if (!formData.id_user_applicant) {
+        addToast({
+          title: "Data siswa tidak valid. Silakan pilih siswa terlebih dahulu.",
+          color: "danger",
+        });
+        return;
+      }
+
+      // Get user profile to get user ID
+      const userProfile = await AxiosClient.getProfile({
+        headers: {
+          authorization: UserUtility.getAuthHeader(),
+        },
+      });
+
+      if (!userProfile?.id) {
+        addToast({
+          title: "Sesi tidak valid",
+          description: "User tidak valid. Silakan login kembali untuk melanjutkan pendaftaran.",
+          color: "danger",
+        });
+        return;
+      }
+
+      const response = await AxiosClient.userCreateApplication({
+        headers: {
+          authorization: UserUtility.getAuthHeader(),
+        },
+        body: {
+          id_user: userProfile.id,
+          id_user_applicant: formData.id_user_applicant,
+          application_type: formData.application_type as any,
+          nisn: formData.nisn || undefined,
+          nik: formData.nik,
+          parent_fullname: formData.parent_fullname,
+          parent_phone: formData.parent_phone,
+          parent_email: formData.parent_email,
+          pendidikan_terakhir: formData.pendidikan_terakhir as any,
+          grade_terakhir: formData.grade_terakhir,
+          asal_sekolah: formData.asal_sekolah,
+          student_status: formData.student_status as any,
+          alasan_pindah: formData.alasan_pindah || undefined,
+          kk_url: formData.kk_url,
+          akta_lahir_url: formData.akta_lahir_url,
+          ktp_ortu_url: formData.ktp_ortu_url,
+          photo_url: formData.photo_url,
+          selfie_url: formData.selfie_url,
+          ijazah_terakhir_url: formData.ijazah_terakhir_url || undefined,
+          raport_url: formData.raport_url || undefined,
+          surat_pindah_url: formData.surat_pindah_url || undefined,
+        },
+      });
+
+      addToast({
+        title: "Pendaftaran berhasil dikirim!",
+        color: "success",
+      });
+
+      // Redirect to user details page
+      window.location.href = "/user-details";
     } catch (err: any) {
       addToast({
-        title: err?.response?.data?.toString() ?? err?.message ?? "Unknown Error",
+        title: "Gagal mengirim pendaftaran",
+        description: err?.response?.data?.toString() ?? err?.message ?? "Terjadi kesalahan saat mengirim pendaftaran. Silakan coba lagi.",
+        color: "danger",
       });
     } finally {
       setLoadingSubmit(false);
     }
   }
+
+  const documentFields = [
+    { label: "Kartu Keluarga", required: true, key: "kk_url" },
+    { label: "Akte Lahir Siswa", required: true, key: "akta_lahir_url" },
+    { label: "KTP Orang Tua", required: true, key: "ktp_ortu_url" },
+    { label: "Pasfoto Terkini (3x4)", required: true, key: "photo_url" },
+    { label: "Foto Selfie", required: true, key: "selfie_url" },
+    { label: "Ijazah Terakhir", required: false, key: "ijazah_terakhir_url" },
+    { label: "Rapor Terakhir", required: false, key: "raport_url" },
+  ];
 
   return (
     <Layout parentClassName="bg-background-light min-h-screen">
@@ -379,6 +539,8 @@ export function EnrollPage() {
                     placeholder="Nomor Induk Siswa Nasional"
                     variant="bordered"
                     labelPlacement="outside"
+                    value={formData.nisn}
+                    onValueChange={(value) => handleInputChange("nisn", value)}
                   />
 
                   <Select
@@ -401,6 +563,7 @@ export function EnrollPage() {
                     variant="bordered"
                     labelPlacement="outside"
                     className=""
+                    isRequired
                     value={formData.asal_sekolah}
                     onValueChange={(value) => handleInputChange("asal_sekolah", value)}
                   />
@@ -495,29 +658,92 @@ export function EnrollPage() {
                     <Info size={20} className="text-primary shrink-0" />
                     <p className="text-xs text-secondary/70">
                       Pastikan dokumen dalam format PDF atau Gambar (JPG/PNG)
-                      dengan ukuran maksimal 2MB per file.
+                      dengan ukuran maksimal 10MB per file.
                     </p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {[
-                      { label: "Kartu Keluarga", required: true },
-                      { label: "Akte Lahir Siswa", required: true },
-                      { label: "KTP Orang Tua", required: true },
-                      { label: "Pasfoto Terkini (3x4)", required: true },
-                      { label: "Ijazah Terakhir", required: false },
-                      { label: "Rapor Terakhir", required: false },
-                    ].map((doc, i) => (
+                    {documentFields.map((doc, i) => (
                       <div key={i} className="flex flex-col gap-2">
                         <label className="text-sm font-bold text-secondary">
-                          {doc.label}{" "}
+                          {doc.label}
+                          {doc.required && <span className="text-danger">*</span>}
                           {!doc.required && (
                             <span className="text-zinc-400 font-normal">
-                              (Opsional)
+                              {" "}(Opsional)
                             </span>
                           )}
                         </label>
-                        <div className="border-2 border-dashed border-zinc-200 hover:border-primary rounded-2xl p-4 transition-all group cursor-pointer bg-zinc-50/50">
+                        <div className={`border-2 border-dashed rounded-2xl p-4 transition-all ${formData[doc.key as keyof typeof formData]
+                          ? "border-success bg-success/5"
+                          : "border-zinc-200 hover:border-primary bg-zinc-50/50"
+                          } ${uploadingFiles[doc.key] ? "opacity-50" : ""}`}>
+                          <input
+                            type="file"
+                            className="hidden"
+                            id={`file-${i}`}
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            disabled={uploadingFiles[doc.key] || !!formData[doc.key as keyof typeof formData]}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0] || null;
+                              handleFileChange(doc.key, file);
+                            }}
+                          />
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 bg-white rounded-lg shadow-sm transition-colors shrink-0 ${formData[doc.key as keyof typeof formData]
+                              ? "text-success"
+                              : "group-hover:text-primary"
+                              }`}>
+                              {uploadingFiles[doc.key] ? (
+                                <div className="animate-spin">⏳</div>
+                              ) : formData[doc.key as keyof typeof formData] ? (
+                                <CheckCircle2 size={20} />
+                              ) : (
+                                <Upload size={20} />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              {formData[doc.key as keyof typeof formData] ? (
+                                <>
+                                  <a
+                                    href={`${import.meta.env.VITE_API_URL}${formData[doc.key as keyof typeof formData]}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs font-medium text-primary hover:underline block truncate"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {(formData[doc.key as keyof typeof formData] as string).split('/').pop() || 'File terupload'}
+                                  </a>
+                                  <span className="text-xs text-success">✓ Klik untuk melihat</span>
+                                </>
+                              ) : uploadingFiles[doc.key] ? (
+                                <span className="text-xs font-medium text-zinc-500 block">Mengupload...</span>
+                              ) : (
+                                <label
+                                  htmlFor={`file-${i}`}
+                                  className="text-xs font-medium text-zinc-500 block cursor-pointer hover:text-primary"
+                                >
+                                  Pilih file...
+                                </label>
+                              )}
+                            </div>
+                            {formData[doc.key as keyof typeof formData] && !uploadingFiles[doc.key] && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleInputChange(doc.key, "");
+                                }}
+                                className="p-1 hover:bg-danger/10 rounded-lg transition-colors shrink-0"
+                                title="Hapus file"
+                              >
+                                <X size={16} className="text-danger" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        {/* <div className="border-2 border-dashed border-zinc-200 hover:border-primary rounded-2xl p-4 transition-all group cursor-pointer bg-zinc-50/50">
                           <input
                             type="file"
                             className="hidden"
@@ -534,7 +760,7 @@ export function EnrollPage() {
                               Pilih file...
                             </span>
                           </label>
-                        </div>
+                        </div> */}
                       </div>
                     ))}
                   </div>
@@ -763,6 +989,6 @@ export function EnrollPage() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </Layout>
+    </Layout >
   );
 }
