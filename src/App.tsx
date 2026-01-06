@@ -15,6 +15,7 @@ import { EnrollPage } from "./pages/user/enroll";
 import { UserDetailsPage } from "./pages/user/user-details";
 import { AxiosClient } from "./api/AxiosClient";
 import { base_url, LoaderData, UserUtility } from "./utility";
+import { KontakPage } from "./pages/kontak";
 
 AxiosClient.BaseURL.instance.set(base_url);
 
@@ -73,6 +74,11 @@ export default function App() {
             {
               path: "/admisi",
               element: <AdmisiPage />,
+              loader: loaderUserProfile,
+            },
+            {
+              path: "/kontak",
+              element: <KontakPage />,
               loader: loaderUserProfile,
             },
             {
