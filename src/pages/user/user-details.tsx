@@ -14,6 +14,7 @@ import {
   Download,
 } from "lucide-react";
 import { Layout } from "../../components/layout/Layout";
+import { Link } from "react-router-dom";
 
 export function UserDetailsPage() {
   // Status: 'pending' | 'accepted' | 'rejected'
@@ -220,6 +221,8 @@ export function UserDetailsPage() {
                 hubungi admin melalui layanan pengaduan.
               </p>
               <Button
+                as={Link}
+                to="https://wa.me/628117778132"
                 size="sm"
                 variant="flat"
                 color="primary"
