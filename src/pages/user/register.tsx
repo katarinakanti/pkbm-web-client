@@ -48,7 +48,7 @@ export function RegisterPage() {
       UserUtility.setToken(res.token);
     } catch (err: any) {
       addToast({
-        title: err?.response?.data?.toString() ?? "Unknown Error",
+        title: err?.response?.data?.toString() ?? err?.message ?? "Unknown Error",
       });
     } finally {
       setLoadingSubmit(false);
