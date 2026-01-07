@@ -194,7 +194,8 @@ export function Header(props: HeaderProps) {
                 </Button>
                 <Button
                   variant="flat"
-                  className="font-bold justify-start text-zinc-500"
+                  color="danger"
+                  className="font-bold justify-start text-secondary"
                   startContent={<LogOut size={18} />}
                   onPress={logout}
                 >
