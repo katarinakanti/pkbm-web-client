@@ -30,7 +30,7 @@ import {
   X,
 } from "lucide-react";
 import { Layout } from "../../components/layout/Layout";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { UserUtility } from "../../utility";
 import { UserApplicant } from "../../api/model/table/UserApplicant";
 import { Gender } from "../../api/model/enum/Gender";
