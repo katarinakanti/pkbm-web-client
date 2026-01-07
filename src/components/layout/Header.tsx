@@ -89,6 +89,29 @@ export function Header(props: HeaderProps) {
           >
             <img className="object-contain h-9" src={"/logoBudiman.png"} />
           </Link>
+          
+          {/* MOBILE MENU */}
+          <div className="flex flex-col gap-2 py-4 md:hidden">
+            {[
+              { label: "Tentang Kami", path: "/tentang-kami" },
+              { label: "Program", path: "/program" },
+              { label: "Admisi", path: "/admisi" },
+              { label: "Kontak", path: "/kontak" },
+            ].map((item) => (
+              <Button
+                key={item.path}
+                variant="light"
+                className="font-bold text-secondary hover:text-primary justify-start"
+                onPress={() => {
+                  navigate(item.path);
+                  setOpenSidebar(false);
+                }}
+              >
+                {item.label}
+              </Button>
+            ))}
+          </div>
+          
           {/* DESKTOP MENU */}
           <div className="hidden md:flex items-center justify-center flex-1 gap-2">
             {[
@@ -193,23 +216,31 @@ export function Header(props: HeaderProps) {
             `}
             >
               {user && (
-                <div
-                  className={`
-              hidden
-              md:block md:flex md:items-center md:gap-3
-            `}
-                >
-                  <Link
-                    to={"/"}
-                    className="text-[15px] font-medium text-primary hover:underline"
-                  >
+                <div className="flex flex-col gap-3 w-full">
+                  <div className="text-[15px] font-medium text-primary text-center py-2 border-t border-zinc-200">
                     Hi, {user?.fullname}!
-                  </Link>
-                  <div className="h-8 w-px bg-zinc-300" />
-                  <div onClick={logout} className="cursor-pointer">
-                    <img className="w-5 object-contain" src={"/logout.svg"} />
                   </div>
-                  <div className="h-8 w-px bg-zinc-300" />
+                  <Button
+                    variant="flat"
+                    className="w-full"
+                    onPress={() => {
+                      navigate("/applications");
+                      setOpenSidebar(false);
+                    }}
+                  >
+                    Applications
+                  </Button>
+                  <Button
+                    variant="flat"
+                    color="danger"
+                    className="w-full"
+                    onPress={() => {
+                      logout();
+                      setOpenSidebar(false);
+                    }}
+                  >
+                    Logout
+                  </Button>
                 </div>
               )}
               {!user && (
