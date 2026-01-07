@@ -1,7 +1,13 @@
 import { Link, useLoaderData, useNavigate } from "react-router";
 import { AlignJustify, Phone, PhoneCall, UserCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Button } from "@heroui/react";
+import {
+  Button,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+} from "@heroui/react";
 import { User } from "../../api/model/table/User";
 import { UserUtility } from "../../utility";
 
@@ -26,10 +32,11 @@ export function Header(props: HeaderProps) {
 
   return (
     <div
-      className={`${props.noPaddingHorizontal ? "" : "px-6 xl:px-[14%]"} ${props.showBg
-        ? "bg-white shadow-[0px_1px_5px_rgba(0,0,0,.04)]"
-        : "bg-transparent"
-        } transition transition-all py-4 flex items-center justify-between`}
+      className={`${props.noPaddingHorizontal ? "" : "px-6 xl:px-[14%]"} ${
+        props.showBg
+          ? "bg-white shadow-[0px_1px_5px_rgba(0,0,0,.04)]"
+          : "bg-transparent"
+      } transition transition-all py-4 flex items-center justify-between`}
     >
       {/* LOGO */}
       <Link to={"/"} className="group">
@@ -54,7 +61,8 @@ export function Header(props: HeaderProps) {
           setOpenSidebar(false);
         }}
         className={`
-          fixed ${open_sidebar ? "opacity-100" : "opacity-0 pointer-events-none"
+          fixed ${
+            open_sidebar ? "opacity-100" : "opacity-0 pointer-events-none"
           } left-0 transition transition-all top-0 w-screen h-screen bg-[#0005]
           md:relative md:w-auto md:h-auto md:flex-1 md:flex md:opacity-100 md:pointer-events-auto md:bg-transparent
         `}
@@ -64,9 +72,11 @@ export function Header(props: HeaderProps) {
             e.stopPropagation();
           }}
           className={`
-            ${open_sidebar ? "translate-x-0" : "translate-x-[-100%]"
+            ${
+              open_sidebar ? "translate-x-0" : "translate-x-[-100%]"
             } transition transition-transform w-[80%] flex flex-col gap-4 h-full overflow-y-auto p-6 py-6 bg-white
-            ${open_sidebar ? "" : "md:translate-x-0"
+            ${
+              open_sidebar ? "" : "md:translate-x-0"
             } md:w-auto md:flex-row md:flex-1 md:py-0 md:px-0 md:bg-transparent
           `}
         >
@@ -129,31 +139,52 @@ export function Header(props: HeaderProps) {
               md:block md:flex md:items-center md:gap-3
             `}
               >
-                <Button
-                  variant="light"
-                  className="text-[15px] font-medium text-primary hover:underline shadow-none bg-transparent"
-                >
-                  Hi, {user?.fullname}!
-                </Button>
+                <Dropdown placement="bottom-end">
+                  <DropdownTrigger>
+                    <Button
+                      variant="light"
+                      className="text-[15px] font-medium text-primary hover:underline shadow-none bg-transparent"
+                    >
+                      Hi, {user?.fullname}!
+                    </Button>
+                  </DropdownTrigger>
+
+                  <DropdownMenu aria-label="User menu">
+                    <DropdownItem
+                      key="applications"
+                      onPress={() => navigate("/applications")}
+                    >
+                      Applications
+                    </DropdownItem>
+
+                    <DropdownItem
+                      key="logout"
+                      className="text-danger"
+                      onPress={logout}
+                    >
+                      Logout
+                    </DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
                 <div className="h-8 w-px bg-zinc-300" />
-                <div
-                  onClick={logout} 
-                  className="cursor-pointer">
+                <div onClick={logout} className="cursor-pointer">
                   <img className="w-5 object-contain" src={"/logout.svg"} />
                 </div>
                 <div className="h-8 w-px bg-zinc-300" />
               </div>
             )}
-            {!user && <Button
-              as={Link}
-              to={"/login"}
-              className={`
+            {!user && (
+              <Button
+                as={Link}
+                to={"/login"}
+                className={`
                 hidden
                 md:flex md:rounded-full md:bg-primary md:text-white
               `}
-            >
-              Login/Register
-            </Button>}
+              >
+                Login/Register
+              </Button>
+            )}
 
             <div
               className={`
@@ -175,15 +206,13 @@ export function Header(props: HeaderProps) {
                     Hi, {user?.fullname}!
                   </Link>
                   <div className="h-8 w-px bg-zinc-300" />
-                  <div
-                    onClick={logout} 
-                    className="cursor-pointer">
+                  <div onClick={logout} className="cursor-pointer">
                     <img className="w-5 object-contain" src={"/logout.svg"} />
                   </div>
                   <div className="h-8 w-px bg-zinc-300" />
                 </div>
               )}
-              {!user &&
+              {!user && (
                 <div className="w-full">
                   <Button
                     as={Link}
@@ -193,7 +222,7 @@ export function Header(props: HeaderProps) {
                     Login/Register
                   </Button>
                 </div>
-              }
+              )}
             </div>
           </div>
         </div>
