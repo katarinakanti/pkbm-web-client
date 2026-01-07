@@ -18,7 +18,7 @@ import { base_url, LoaderData, UserUtility } from "./utility";
 import { KontakPage } from "./pages/kontak";
 import { PaymentPage } from "./pages/user/payment";
 import { ApplicationsPage } from "./pages/user/applications";
-import { UpdateApplicationPage } from "./pages/user/update-application";
+// import { UpdateApplicationPage } from "./pages/user/update-application";
 
 AxiosClient.BaseURL.instance.set(base_url);
 
@@ -105,11 +105,11 @@ export default function App() {
               element: <UserDetailsPage />,
               loader: loaderUserProfile,
             },
-            {
-              path: "/update-application/:id",
-              element: <UpdateApplicationPage />,
-              loader: loaderUserProfile,
-            },
+            // {
+            //   path: "/update-application/:id",
+            //   element: <UpdateApplicationPage />,
+            //   loader: loaderUserProfile,
+            // },
             {
               path: "/payment",
               element: <PaymentPage />,

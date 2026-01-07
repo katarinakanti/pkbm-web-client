@@ -197,11 +197,7 @@ export function UserDetailsPage() {
                   )}
                   <Button
                     as={Link}
-                    to={
-                      application
-                        ? `/update-application/${application.id}`
-                        : "/update-application"
-                    }
+                    to={`/enroll`}
                     className="w-full bg-red-500 text-white font-black h-16 rounded-2xl text-lg shadow-xl shadow-red-200"
                     endContent={<ChevronRight size={20} />}
                   >
