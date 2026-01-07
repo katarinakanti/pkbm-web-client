@@ -23,6 +23,7 @@ export function PaymentPage() {
   const [uploading, setUploading] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+  const [applicationId, setApplicationId] = useState<number | null>(null);
 
   const [paymentData, setPaymentData] = useState({
     studentName: "-",
@@ -49,6 +50,7 @@ export function PaymentPage() {
       }
 
       const id = Number(idFromQuery);
+      setApplicationId(id);
       const authHeader = UserUtility.getAuthHeader();
       
       if (!authHeader) {
@@ -160,13 +162,21 @@ export function PaymentPage() {
       return;
     }
 
+    if (!applicationId) {
+      addToast({
+        title: "ID aplikasi tidak valid",
+        color: "danger",
+      });
+      return;
+    }
+
     try {
       setSubmitting(true);
-      // TODO: Send payment proof to backend
-      // const response = await AxiosClient.userMakePayment({
-      //   headers: { authorization: UserUtility.getAuthHeader() },
-      //   body: { payment_proof_url: uploadedUrl }
-      // });
+      await AxiosClient.userMakePayment({
+        headers: { authorization: UserUtility.getAuthHeader() },
+        path: { id: applicationId },
+        body: { payment_proof_url: uploadedUrl }
+      });
       
       addToast({
         title: "Bukti pembayaran berhasil dikirim!",
@@ -175,7 +185,7 @@ export function PaymentPage() {
       });
       
       // Redirect or handle success
-      window.location.href = "/user-details";
+      window.location.href = `/user-details/${applicationId}`;
     } catch (err: any) {
       addToast({
         title: "Gagal mengirim bukti pembayaran",

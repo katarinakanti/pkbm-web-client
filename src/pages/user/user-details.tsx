@@ -109,8 +109,6 @@ export function UserDetailsPage() {
       ? application.payment_status === true
         ? "approved"
         : "verified"
-      : application.status_application === "APPROVED"
-      ? "approved"
       : "submitted"
     : "submitted";
 
