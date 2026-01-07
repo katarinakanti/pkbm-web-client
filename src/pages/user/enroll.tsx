@@ -20,21 +20,16 @@ import {
 } from "@heroui/react";
 import {
   User,
-  Users,
-  FileUp,
   ArrowRight,
   ArrowLeft,
   CheckCircle2,
   Upload,
-  Calendar,
-  MapPin,
   Info,
   UserPlus,
   Plus,
   X,
 } from "lucide-react";
 import { Layout } from "../../components/layout/Layout";
-import { Link } from "react-router-dom";
 import { UserUtility } from "../../utility";
 import { UserApplicant } from "../../api/model/table/UserApplicant";
 import { Gender } from "../../api/model/enum/Gender";
@@ -73,7 +68,6 @@ export function EnrollPage() {
   const [jenisSiswa, setJenisSiswa] = useState<"siswa-tersimpan" | "siswa-baru">("siswa-baru");
   const [selectedApplicant, setSelectedApplicant] = useState<UserApplicant | null>(null);
   const [savedApplicants, setSavedApplicants] = useState<UserApplicant[]>([]);
-  const [loadingApplicants, setLoadingApplicants] = useState<boolean>(false);
   // Form for new applicant
   const [newApplicant, setNewApplicant] = useState<UserApplicant>({
     id: 0,
@@ -95,7 +89,6 @@ export function EnrollPage() {
 
   async function fetchUserApplicants() {
     try {
-      setLoadingApplicants(true);
       const response = await AxiosClient.userGetUserApplicantsList({
         headers: {
           authorization: UserUtility.getAuthHeader(),
@@ -108,8 +101,6 @@ export function EnrollPage() {
         description: err?.response?.data?.toString() ?? err?.message ?? "Terjadi kesalahan",
         color: "danger",
       });
-    } finally {
-      setLoadingApplicants(false);
     }
   }
 
@@ -395,7 +386,7 @@ export function EnrollPage() {
         return;
       }
 
-      const response = await AxiosClient.userCreateApplication({
+      await AxiosClient.userCreateApplication({
         headers: {
           authorization: UserUtility.getAuthHeader(),
         },
@@ -472,6 +463,7 @@ export function EnrollPage() {
                   <div className="md:col-span-2 flex flex-col gap-2 p-5 border border-zinc-200 rounded-2xl bg-zinc-50/50">
                     <div className="font-bold text-secondary">Pilih Siswa<span className="text-danger">*</span></div>
                     <Button
+                      type="button"
                       onPress={onOpen}
                       variant="bordered"
                       className="justify-start font-semibold border-2"
@@ -706,7 +698,7 @@ export function EnrollPage() {
                               {formData[doc.key as keyof typeof formData] ? (
                                 <>
                                   <a
-                                    href={`${import.meta.env.VITE_API_URL}${formData[doc.key as keyof typeof formData]}`}
+                                    href={`${formData[doc.key as keyof typeof formData]}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-xs font-medium text-primary hover:underline block truncate"
@@ -770,17 +762,18 @@ export function EnrollPage() {
               {/* NAVIGATION BUTTONS */}
               <div className="flex justify-between items-center pt-10 border-t border-zinc-100">
                 <Button
+                  type="button"
                   onPress={prevStep}
                   variant="light"
                   isDisabled={step === 1}
-                  className="font-bold text-secondary disabled:opacity-0"
                   startContent={<ArrowLeft size={20} />}
+                  className="font-semibold"
                 >
                   Kembali
                 </Button>
-
                 {step < 3 ? (
                   <Button
+                    type="button"
                     onPress={nextStep}
                     className="bg-primary text-white font-black px-10 py-7 rounded-2xl shadow-lg shadow-primary/20"
                     endContent={<ArrowRight size={20} />}

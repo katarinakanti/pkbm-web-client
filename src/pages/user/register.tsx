@@ -3,15 +3,12 @@ import {
   Input,
   Card,
   CardBody,
-  Select,
-  SelectItem,
   addToast,
 } from "@heroui/react";
 import { Link } from "react-router";
 import { User, Mail, Lock, GraduationCap, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Layout } from "../../components/layout/Layout";
 import { useState } from "react";
-import { UserUtility } from "../../utility";
 import { AxiosClient } from "../../api/AxiosClient";
 
 export function RegisterPage() {
@@ -36,7 +33,7 @@ export function RegisterPage() {
     try {
       setLoadingSubmit(true);
       // console.log("here")
-      const res = await AxiosClient.registerNewUser({
+      await AxiosClient.registerNewUser({
         body: {
           fullname: data.fullname,
           email: data.email,

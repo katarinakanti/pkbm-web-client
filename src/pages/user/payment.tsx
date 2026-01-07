@@ -6,11 +6,10 @@ import {
   Copy,
   CheckCircle2,
   AlertCircle,
-  QrCode,
   FileText,
   Wallet,
 } from "lucide-react";
-import { Button, Card, CardBody, Divider } from "@heroui/react";
+import { Button, Card, CardBody } from "@heroui/react";
 import { useState } from "react";
 import { Layout } from "../../components/layout/Layout";
 

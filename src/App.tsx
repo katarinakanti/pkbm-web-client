@@ -22,10 +22,6 @@ import { ApplicationsPage } from "./pages/user/applications";
 AxiosClient.BaseURL.instance.set(base_url);
 
 export default function App() {
-  const joinAll = (a: { [key: string]: any }, c: { [key: string]: any }) => ({
-    ...a,
-    ...c,
-  });
   // const { theme, setTheme } = useTheme("light");
 
   async function loaderUserProfile(): Promise<LoaderData> {

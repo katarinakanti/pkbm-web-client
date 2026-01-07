@@ -1,6 +1,6 @@
 import { Link, useLoaderData, useNavigate } from "react-router";
-import { AlignJustify, Phone, PhoneCall, UserCircle2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { AlignJustify } from "lucide-react";
+import { useState } from "react";
 import {
   Button,
   Dropdown,
@@ -57,7 +57,7 @@ export function Header(props: HeaderProps) {
         </div>
       </Link>
       <div
-        onClick={(e) => {
+        onClick={() => {
           setOpenSidebar(false);
         }}
         className={`

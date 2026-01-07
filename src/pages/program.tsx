@@ -5,7 +5,6 @@ import {
   Users,
   Clock,
   Award,
-  ArrowRight,
   CheckCircle2,
   Laptop,
 } from "lucide-react";

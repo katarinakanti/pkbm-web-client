@@ -3,7 +3,6 @@ import {
   GraduationCap,
   NotebookText,
   Star,
-  ArrowRight,
 } from "lucide-react";
 import { Layout } from "../components/layout/Layout";
 import {

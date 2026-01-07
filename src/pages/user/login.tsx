@@ -1,4 +1,4 @@
-import { Button, Input, Checkbox, Card, CardBody, addToast } from "@heroui/react";
+import { Button, Input, Card, CardBody, addToast } from "@heroui/react";
 import { Link } from "react-router";
 import { Mail, Lock } from "lucide-react";
 import { Layout } from "../../components/layout/Layout";
@@ -8,7 +8,6 @@ import { UserUtility } from "../../utility";
 
 export function LoginPage() {
   const [loading, setLoading] = useState<boolean>(false);
-  const [show_password, setShowPassword] = useState<boolean>(false);
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
 
