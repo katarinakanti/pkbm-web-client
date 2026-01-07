@@ -311,6 +311,11 @@ export function UserDetailsPage() {
                 { label: "Akte Lahir", url: application?.akta_lahir_url },
                 { label: "KTP Orang Tua", url: application?.ktp_ortu_url },
                 { label: "Passfoto", url: application?.photo_url },
+                { label: "Selfie", url: application?.selfie_url },
+                { label: "Ijazah Terakhir", url: application?.ijazah_terakhir_url },
+                { label: "Raport", url: application?.raport_url },
+                { label: "Surat Pindah", url: application?.surat_pindah_url },
+
               ]
                 .filter((d) => d.url)
                 .map((doc, i) => {
