@@ -478,7 +478,7 @@ export function EnrollPage() {
       });
 
       // Redirect to user details page
-      navigate("/applications");
+      navigate("/user-details");
     } catch (err: any) {
       addToast({
         title: "Gagal mengirim pendaftaran",
