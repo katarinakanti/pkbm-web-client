@@ -9,8 +9,6 @@ import {
   Timer,
   CheckCircle2,
   XCircle,
-  MapPin,
-  Clock,
   FileText,
   Calendar,
   User,
