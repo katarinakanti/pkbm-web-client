@@ -30,21 +30,25 @@ import {
   X,
 } from "lucide-react";
 import { Layout } from "../../components/layout/Layout";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { UserUtility } from "../../utility";
 import { UserApplicant } from "../../api/model/table/UserApplicant";
 import { Gender } from "../../api/model/enum/Gender";
 import { AxiosClient } from "../../api/AxiosClient";
 import moment from "moment";
+import { Application } from "../../api/model/table/Application";
 
-export function EnrollPage() {
+export function UpdateApplicationPage() {
   UserUtility.redirectIfNotLogin();
+  const params = useParams();
   const [loading_submit, setLoadingSubmit] = useState<boolean>(false);
   const [uploadingFiles, setUploadingFiles] = useState<{
     [key: string]: boolean;
   }>({});
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({
+  const [application, setApplication] = useState<Application | null>(null);
+
+  const [formData, setFormData] = useState<any>({
     id_user_applicant: undefined as number | undefined,
     application_type: "",
     nisn: "",
@@ -66,6 +70,7 @@ export function EnrollPage() {
     raport_url: "",
     surat_pindah_url: "",
   });
+
   const navigate = useNavigate();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [jenisSiswa, setJenisSiswa] = useState<
@@ -74,7 +79,6 @@ export function EnrollPage() {
   const [selectedApplicant, setSelectedApplicant] =
     useState<UserApplicant | null>(null);
   const [savedApplicants, setSavedApplicants] = useState<UserApplicant[]>([]);
-  // Form for new applicant
   const [newApplicant, setNewApplicant] = useState<UserApplicant>({
     id: 0,
     id_user: 0,
@@ -88,10 +92,11 @@ export function EnrollPage() {
     religion: "",
   });
 
-  // Fetch user applicants on component mount
   useEffect(() => {
     fetchUserApplicants();
-  }, []);
+    const idFromParam = params.id;
+    if (idFromParam) fetchApplicationById(idFromParam);
+  }, [params.id]);
 
   async function fetchUserApplicants() {
     try {
@@ -113,9 +118,58 @@ export function EnrollPage() {
     }
   }
 
-  // const nextStep = () => setStep((prev) => Math.min(prev + 1, 3));
+  async function fetchApplicationById(idStr?: string | null) {
+    if (!idStr) return;
+    const id = Number(idStr);
+    if (!id) return;
+    try {
+      const res = await AxiosClient.userGetUserApplicationById({
+        headers: { authorization: UserUtility.getAuthHeader() },
+        path: { id },
+      });
+      if (res) {
+        setApplication(res);
+        // populate form data
+        setFormData({
+          id_user_applicant: res.id_user_applicant || undefined,
+          application_type: res.application_type || "",
+          nisn: res.nisn || "",
+          nik: res.nik || "",
+          pendidikan_terakhir: res.pendidikan_terakhir || "",
+          grade_terakhir: res.grade_terakhir || "",
+          asal_sekolah: res.asal_sekolah || "",
+          student_status: res.student_status || "BARU",
+          alasan_pindah: res.alasan_pindah || "",
+          parent_fullname: res.parent_fullname || "",
+          parent_phone: res.parent_phone || "",
+          parent_email: res.parent_email || "",
+          kk_url: res.kk_url || "",
+          akta_lahir_url: res.akta_lahir_url || "",
+          ktp_ortu_url: res.ktp_ortu_url || "",
+          photo_url: res.photo_url || "",
+          selfie_url: res.selfie_url || "",
+          ijazah_terakhir_url: res.ijazah_terakhir_url || "",
+          raport_url: res.raport_url || "",
+          surat_pindah_url: res.surat_pindah_url || "",
+        });
+
+        // selectedApplicant will be resolved once savedApplicants are loaded
+      }
+    } catch (err: any) {
+      addToast({ title: "Gagal memuat data pendaftaran", color: "danger" });
+    }
+  }
+
+  // When both application and savedApplicants are available, resolve selectedApplicant
+  useEffect(() => {
+    if (!application || savedApplicants.length === 0) return;
+    const found = savedApplicants.find(
+      (a) => a.id === application.id_user_applicant
+    );
+    if (found) setSelectedApplicant(found);
+  }, [application, savedApplicants]);
+
   const nextStep = () => {
-    // Validate step 1: Check if student is selected
     if (step === 1) {
       if (!selectedApplicant) {
         addToast({
@@ -138,8 +192,6 @@ export function EnrollPage() {
         return;
       }
     }
-
-    // Validate step 2
     if (step === 2) {
       if (
         !formData.parent_fullname ||
@@ -153,19 +205,17 @@ export function EnrollPage() {
         return;
       }
     }
-
     setStep((prev) => Math.min(prev + 1, 3));
   };
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData((prev) => ({
+    setFormData((prev: any) => ({
       ...prev,
       [field]: value,
     }));
   };
 
-  // Upload file to server and return URL
   async function uploadFile(
     file: File,
     fieldKey: string
@@ -173,40 +223,29 @@ export function EnrollPage() {
     try {
       setUploadingFiles((prev) => ({ ...prev, [fieldKey]: true }));
 
-      const formData = new FormData();
-      formData.append("file", file);
+      const form = new FormData();
+      form.append("file", file);
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
         method: "POST",
         headers: {
           Authorization: UserUtility.getAuthHeader(),
         },
-        body: formData,
+        body: form,
       });
 
-      if (!response.ok) {
-        throw new Error("Upload failed");
-      }
-
+      if (!response.ok) throw new Error("Upload failed");
       const data = await response.json();
-
-      addToast({
-        title: "File berhasil diupload",
-        color: "success",
-      });
-
-      // Handle response - could be string directly or object with path
+      addToast({ title: "File berhasil diupload", color: "success" });
       const filePath =
         typeof data === "string"
           ? data
           : data.url || data.file_url || data.path || data;
-
-      // Return the path (e.g., "/uploads/file.png")
       return filePath;
     } catch (err: any) {
       addToast({
         title: "Gagal upload file",
-        description: err?.message ?? "Terjadi kesalahan saat mengupload file",
+        description: err?.message ?? "",
         color: "danger",
       });
       return null;
@@ -220,21 +259,14 @@ export function EnrollPage() {
       handleInputChange(field, "");
       return;
     }
-
-    // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       addToast({
         title: "Ukuran file terlalu besar",
-        description:
-          "Ukuran file maksimal 10MB. File yang Anda pilih berukuran " +
-          (file.size / (1024 * 1024)).toFixed(2) +
-          "MB",
+        description: "Ukuran file maksimal 10MB.",
         color: "danger",
       });
       return;
     }
-
-    // Validate file type
     const allowedTypes = [
       "application/pdf",
       "image/jpeg",
@@ -242,68 +274,39 @@ export function EnrollPage() {
       "image/png",
     ];
     if (!allowedTypes.includes(file.type)) {
-      addToast({
-        title: "Format file tidak didukung",
-        description:
-          "Format file harus PDF, JPG, JPEG, atau PNG. File yang Anda pilih: " +
-          file.type,
-        color: "danger",
-      });
+      addToast({ title: "Format file tidak didukung", color: "danger" });
       return;
     }
-
-    // Upload file and store URL
     const uploadedUrl = await uploadFile(file, field);
-    if (uploadedUrl) {
-      handleInputChange(field, uploadedUrl);
-    }
+    if (uploadedUrl) handleInputChange(field, uploadedUrl);
   };
 
   const handleSelectApplicant = (applicant: UserApplicant) => {
     setSelectedApplicant(applicant);
-    setFormData((prev) => ({
-      ...prev,
-      id_user_applicant: applicant.id,
-    }));
+    setFormData((prev: any) => ({ ...prev, id_user_applicant: applicant.id }));
     onClose();
   };
 
   const handleCreateNewApplicant = async () => {
     try {
-      // Validate required fields
       if (
         !newApplicant.fullname ||
         !newApplicant.email ||
         !newApplicant.phone_number ||
         !newApplicant.birth_date
       ) {
-        addToast({
-          title: "Data tidak lengkap",
-          description:
-            "Mohon lengkapi semua field yang wajib diisi: Nama Lengkap, Email, No. Telepon, dan Tanggal Lahir",
-          color: "danger",
-        });
+        addToast({ title: "Data tidak lengkap", color: "danger" });
         return;
       }
-
-      // Validate birth_date is a valid Date
       if (
         !(newApplicant.birth_date instanceof Date) ||
         isNaN(newApplicant.birth_date.getTime())
       ) {
-        addToast({
-          title: "Tanggal lahir tidak valid",
-          description: "Mohon masukkan tanggal lahir yang valid",
-          color: "danger",
-        });
+        addToast({ title: "Tanggal lahir tidak valid", color: "danger" });
         return;
       }
-
-      // API call to create new applicant
       const response = await AxiosClient.userCreateUserApplicant({
-        headers: {
-          authorization: UserUtility.getAuthHeader(),
-        },
+        headers: { authorization: UserUtility.getAuthHeader() },
         body: {
           fullname: newApplicant.fullname,
           email: newApplicant.email,
@@ -312,26 +315,15 @@ export function EnrollPage() {
           gender: newApplicant.gender,
           birth_date: parseInt(
             moment(newApplicant.birth_date).format("YYYYMMDD")
-          ), // Convert to YYYYMMDD number
+          ),
           birth_place: newApplicant.birth_place || "",
           religion: newApplicant.religion || "",
         },
       });
-
-      // Set the newly created applicant as selected
       setSelectedApplicant(response);
-      setFormData((prev) => ({
-        ...prev,
-        id_user_applicant: response.id,
-      }));
-
-      // Refresh the list of applicants
+      setFormData((prev: any) => ({ ...prev, id_user_applicant: response.id }));
       await fetchUserApplicants();
-
-      // Close modal
       onClose();
-
-      // Reset form
       setNewApplicant({
         id: 0,
         id_user: 0,
@@ -344,80 +336,19 @@ export function EnrollPage() {
         birth_place: "",
         religion: "",
       });
-
-      addToast({
-        title: "Siswa berhasil ditambahkan",
-        color: "success",
-      });
+      addToast({ title: "Siswa berhasil ditambahkan", color: "success" });
     } catch (err: any) {
       addToast({
         title: "Gagal menambahkan siswa",
-        description:
-          err?.response?.data?.toString() ??
-          err?.message ??
-          "Terjadi kesalahan saat menambahkan siswa",
+        description: err?.message ?? "",
         color: "danger",
       });
     }
   };
 
-  const StepIndicator = () => (
-    <div className="flex flex-col gap-4 mb-10">
-      <div className="flex justify-between items-end px-2">
-        <div className="space-y-1">
-          <p className="text-primary font-bold text-sm uppercase tracking-widest">
-            Langkah {step} dari 3
-          </p>
-          <h2 className="text-2xl font-black text-secondary">
-            {step === 1 && "Data Calon Siswa"}
-            {step === 2 && "Data Orang Tua / Wali"}
-            {step === 3 && "Unggah Dokumen Pendukung"}
-          </h2>
-        </div>
-        <div className="hidden md:block text-secondary/40 font-bold text-4xl italic">
-          0{step}
-        </div>
-      </div>
-      <Progress
-        aria-label="Enrollment progress"
-        value={(step / 3) * 100}
-        color="primary"
-        className="h-2 shadow-inner"
-      />
-    </div>
-  );
-
-  async function submitApplication() {
+  async function submitUpdate() {
     try {
       setLoadingSubmit(true);
-
-      // Validate required documents
-      if (
-        !formData.kk_url ||
-        !formData.akta_lahir_url ||
-        !formData.ktp_ortu_url ||
-        !formData.photo_url ||
-        !formData.selfie_url
-      ) {
-        addToast({
-          title: "Dokumen belum lengkap",
-          description:
-            "Mohon upload semua dokumen yang wajib: Kartu Keluarga, Akte Lahir, KTP Orang Tua, Pasfoto, dan Foto Selfie",
-          color: "danger",
-        });
-        return;
-      }
-
-      // // Validate required fields
-      // if (!formData.id_user_applicant || !formData.application_type || !formData.nik || !formData.parent_fullname || !formData.parent_phone || !formData.parent_email || !formData.pendidikan_terakhir || !formData.grade_terakhir || !formData.asal_sekolah || !formData.student_status) {
-      //   addToast({
-      //     title: "Mohon lengkapi semua field yang wajib diisi",
-      //     color: "danger",
-      //   });
-      //   return;
-      // }
-
-      // Validate id_user_applicant is set
       if (!formData.id_user_applicant) {
         addToast({
           title: "Data siswa tidak valid. Silakan pilih siswa terlebih dahulu.",
@@ -425,41 +356,26 @@ export function EnrollPage() {
         });
         return;
       }
-
-      // Get user profile to get user ID
-      const userProfile = await AxiosClient.getProfile({
-        headers: {
-          authorization: UserUtility.getAuthHeader(),
-        },
-      });
-
-      if (!userProfile?.id) {
-        addToast({
-          title: "Sesi tidak valid",
-          description:
-            "User tidak valid. Silakan login kembali untuk melanjutkan pendaftaran.",
-          color: "danger",
-        });
+      const id = application?.id;
+      if (!id) {
+        addToast({ title: "ID pendaftaran tidak ditemukan", color: "danger" });
         return;
       }
-
-      await AxiosClient.userCreateApplication({
-        headers: {
-          authorization: UserUtility.getAuthHeader(),
-        },
+      await AxiosClient.userUpdateUserApplicationById({
+        headers: { authorization: UserUtility.getAuthHeader() },
+        path: { id },
         body: {
-          id_user: userProfile.id,
           id_user_applicant: formData.id_user_applicant,
-          application_type: formData.application_type as any,
+          application_type: formData.application_type,
           nisn: formData.nisn || undefined,
           nik: formData.nik,
-          parent_fullname: formData.parent_fullname,
+          // parent_fullname: formData.parent_fullname,
           parent_phone: formData.parent_phone,
           parent_email: formData.parent_email,
-          pendidikan_terakhir: formData.pendidikan_terakhir as any,
+          pendidikan_terakhir: formData.pendidikan_terakhir,
           grade_terakhir: formData.grade_terakhir,
           asal_sekolah: formData.asal_sekolah,
-          student_status: formData.student_status as any,
+          student_status: formData.student_status,
           alasan_pindah: formData.alasan_pindah || undefined,
           kk_url: formData.kk_url,
           akta_lahir_url: formData.akta_lahir_url,
@@ -471,21 +387,12 @@ export function EnrollPage() {
           surat_pindah_url: formData.surat_pindah_url || undefined,
         },
       });
-
-      addToast({
-        title: "Pendaftaran berhasil dikirim!",
-        color: "success",
-      });
-
-      // Redirect to user details page
-      navigate("/user-details");
+      addToast({ title: "Perubahan disimpan", color: "success" });
+      navigate(`/user-details?id=${application?.id}`);
     } catch (err: any) {
       addToast({
-        title: "Gagal mengirim pendaftaran",
-        description:
-          err?.response?.data?.toString() ??
-          err?.message ??
-          "Terjadi kesalahan saat mengirim pendaftaran. Silakan coba lagi.",
+        title: "Gagal menyimpan perubahan",
+        description: err?.message ?? "",
         color: "danger",
       });
     } finally {
@@ -506,20 +413,41 @@ export function EnrollPage() {
   return (
     <Layout parentClassName="bg-background-light min-h-screen">
       <div className="container mx-auto px-6 py-12 max-w-4xl">
+        {/* Sticky notes banner */}
+        {application?.notes && (
+          <div className="sticky top-24 z-30 mb-4 p-4 bg-red-50 border-l-4 border-red-400 rounded-md">
+            <p className="text-xs font-black uppercase text-red-700 tracking-wider">
+              Catatan Admin
+            </p>
+            <p className="text-sm text-red-800 mt-1">{application.notes}</p>
+          </div>
+        )}
+
         {/* FORM CONTAINER */}
         <Card className="shadow-2xl border-none p-4 md:p-8 rounded-[40px]">
           <CardBody>
-            <StepIndicator />
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-2xl font-black text-secondary">
+                  Edit Pendaftaran
+                </h2>
+                <p className="text-sm text-secondary/60">
+                  ID: {application ? `#${application.id}` : "-"}
+                </p>
+              </div>
+              <div className="text-secondary/40 font-bold text-4xl italic">
+                {application ? application.application_type : ""}
+              </div>
+            </div>
 
             <form
               className="space-y-8"
               onSubmit={(e) => {
-                // console.log("submitted", data)
                 e.preventDefault();
-                submitApplication();
+                submitUpdate();
               }}
             >
-              {/* STEP 1: DATA SISWA */}
+              {/* STEP 1 */}
               {step === 1 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4">
                   <div className="md:col-span-2 flex flex-col gap-2 p-5 border border-zinc-200 rounded-2xl bg-zinc-50/50">
@@ -578,6 +506,7 @@ export function EnrollPage() {
                       </div>
                     )}
                   </div>
+
                   <Select
                     label="Pilih Paket Pendidikan"
                     variant="bordered"
@@ -598,13 +527,6 @@ export function EnrollPage() {
                     <SelectItem key="SMP">Paket B (Setara SMP)</SelectItem>
                     <SelectItem key="SMA">Paket C (Setara SMA)</SelectItem>
                   </Select>
-
-                  {/* <Input
-                    label="Nama Lengkap Siswa"
-                    placeholder="Sesuai Akte Lahir"
-                    variant="bordered"
-                    labelPlacement="outside"
-                  /> */}
 
                   <Input
                     label="NIK"
@@ -683,6 +605,7 @@ export function EnrollPage() {
                     <SelectItem key="SMA">SMA</SelectItem>
                     <SelectItem key="S1">S1</SelectItem>
                   </Select>
+
                   <Input
                     label="Grade Terakhir"
                     placeholder="Grade terakhir sebelumnya"
@@ -695,7 +618,6 @@ export function EnrollPage() {
                     isRequired
                     value={formData.grade_terakhir}
                     onValueChange={(value) => {
-                      // Only allow integers
                       const intValue = value.replace(/\D/g, "");
                       handleInputChange("grade_terakhir", intValue);
                     }}
@@ -717,7 +639,7 @@ export function EnrollPage() {
                 </div>
               )}
 
-              {/* STEP 2: DATA ORANG TUA */}
+              {/* STEP 2 */}
               {step === 2 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-right-4">
                   <Input
@@ -875,31 +797,13 @@ export function EnrollPage() {
                               )}
                           </div>
                         </div>
-                        {/* <div className="border-2 border-dashed border-zinc-200 hover:border-primary rounded-2xl p-4 transition-all group cursor-pointer bg-zinc-50/50">
-                          <input
-                            type="file"
-                            className="hidden"
-                            id={`file-${i}`}
-                          />
-                          <label
-                            htmlFor={`file-${i}`}
-                            className="flex items-center gap-3 cursor-pointer"
-                          >
-                            <div className="p-2 bg-white rounded-lg shadow-sm group-hover:text-primary transition-colors">
-                              <Upload size={20} />
-                            </div>
-                            <span className="text-xs font-medium text-zinc-500">
-                              Pilih file...
-                            </span>
-                          </label>
-                        </div> */}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* NAVIGATION BUTTONS */}
+              {/* NAVIGATION */}
               <div className="flex justify-between items-center pt-10 border-t border-zinc-100">
                 <Button
                   type="button"
@@ -927,7 +831,7 @@ export function EnrollPage() {
                     className="bg-secondary text-white font-black px-10 py-7 rounded-2xl shadow-xl shadow-secondary/30"
                     endContent={<CheckCircle2 size={20} />}
                   >
-                    Kirim Pendaftaran
+                    Simpan Perubahan
                   </Button>
                 )}
               </div>
@@ -935,6 +839,7 @@ export function EnrollPage() {
           </CardBody>
         </Card>
       </div>
+
       <Modal
         isOpen={isOpen}
         onClose={onClose}
@@ -1094,9 +999,8 @@ export function EnrollPage() {
                     }
                     onValueChange={(value) => {
                       const date = new Date(value);
-                      if (!isNaN(date.getTime())) {
+                      if (!isNaN(date.getTime()))
                         setNewApplicant({ ...newApplicant, birth_date: date });
-                      }
                     }}
                   />
                   <Select
