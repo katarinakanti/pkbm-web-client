@@ -190,7 +190,7 @@ export function UserDetailsPage() {
 
                   <Button
                     as={Link}
-                    to="/payment"
+                    to={`/payment?id=${application?.id}`}
                     className="w-full bg-primary text-white font-black h-16 rounded-2xl text-lg shadow-xl shadow-primary/20"
                     endContent={<ChevronRight size={20} />}
                   >

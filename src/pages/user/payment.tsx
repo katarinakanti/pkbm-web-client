@@ -9,21 +9,183 @@ import {
   FileText,
   Wallet,
 } from "lucide-react";
-import { Button, Card, CardBody } from "@heroui/react";
-import { useState } from "react";
+import { addToast, Button, Card, CardBody } from "@heroui/react";
+import { useState, useEffect } from "react";
 import { Layout } from "../../components/layout/Layout";
+import { UserUtility } from "../../utility";
+import { useLocation } from "react-router-dom";
+import { AxiosClient } from "../../api/AxiosClient";
 
 export function PaymentPage() {
+  const location = useLocation();
   const [file, setFile] = useState<File | null>(null);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const paymentData = {
-    studentName: "Budi Santoso",
-    packageName: "Paket C (Setara SMA)",
+  const [paymentData, setPaymentData] = useState({
+    studentName: "-",
+    packageName: "-",
     totalAmount: "Rp 2.500.000",
     bank: "BCA",
     accNo: "1234567890",
     accName: "Yayasan Budiman Drestanta",
-  };
+  });
+
+  useEffect(() => {
+    const fetchApplicationData = async () => {
+      const q = new URLSearchParams(location.search);
+      const idFromQuery = q.get("id");
+      
+      if (!idFromQuery) {
+        addToast({
+          title: "ID aplikasi tidak ditemukan",
+          description: "Silakan kembali ke halaman detail siswa",
+          color: "danger",
+        });
+        setLoading(false);
+        return;
+      }
+
+      const id = Number(idFromQuery);
+      const authHeader = UserUtility.getAuthHeader();
+      
+      if (!authHeader) {
+        addToast({
+          title: "Sesi tidak valid",
+          description: "Silakan login kembali",
+          color: "danger",
+        });
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const [application, applicants] = await Promise.all([
+          AxiosClient.userGetUserApplicationById({
+            headers: { authorization: authHeader },
+            path: { id },
+          }),
+          AxiosClient.userGetUserApplicantsList({
+            headers: { authorization: authHeader },
+          }),
+        ]);
+
+        if (application) {
+          // Find applicant name
+          const applicant = applicants.find((a) => a.id === application.id_user_applicant);
+          const studentName = applicant?.fullname || application.otm_id_user_applicant?.fullname || "-";
+          
+          // Map application type to package name
+          const packageName = 
+            application.application_type === "SD"
+              ? "Paket A (Setara SD)"
+              : application.application_type === "SMP"
+              ? "Paket B (Setara SMP)"
+              : application.application_type === "SMA"
+              ? "Paket C (Setara SMA)"
+              : "-";
+
+          setPaymentData((prev) => ({
+            ...prev,
+            studentName,
+            packageName,
+          }));
+        }
+      } catch (err: any) {
+        addToast({
+          title: "Gagal memuat data aplikasi",
+          description: err?.response?.data?.toString() ?? err?.message ?? "Terjadi kesalahan",
+          color: "danger",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchApplicationData();
+  }, [location.search]);
+
+  // Upload file to server and return URL
+  async function uploadFile(file: File): Promise<string | null> {
+    try {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: UserUtility.getAuthHeader(),
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const data = await response.json();
+
+      addToast({
+        title: "File berhasil diupload",
+        color: "success",
+      });
+
+      // Handle response - could be string directly or object with path
+      const filePath = typeof data === 'string' ? data : (data.url || data.file_url || data.path || data);
+
+      // Return the path (e.g., "/uploads/file.png")
+      return filePath;
+    } catch (err: any) {
+      addToast({
+        title: "Gagal upload file",
+        description: err?.message ?? "Terjadi kesalahan saat mengupload file",
+        color: "danger",
+      });
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleSubmit() {
+    if (!uploadedUrl) {
+      addToast({
+        title: "Harap upload bukti pembayaran terlebih dahulu",
+        color: "danger",
+      });
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      // TODO: Send payment proof to backend
+      // const response = await AxiosClient.userMakePayment({
+      //   headers: { authorization: UserUtility.getAuthHeader() },
+      //   body: { payment_proof_url: uploadedUrl }
+      // });
+      
+      addToast({
+        title: "Bukti pembayaran berhasil dikirim!",
+        description: "Pembayaran Anda akan diverifikasi dalam 1x24 jam",
+        color: "success",
+      });
+      
+      // Redirect or handle success
+      window.location.href = "/user-details";
+    } catch (err: any) {
+      addToast({
+        title: "Gagal mengirim bukti pembayaran",
+        description: err?.message ?? "Terjadi kesalahan",
+        color: "danger",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <Layout parentClassName="bg-background-light/50">
@@ -38,6 +200,14 @@ export function PaymentPage() {
           </p>
         </div>
 
+        {loading ? (
+          <Card className="border-none shadow-xl rounded-[40px] overflow-hidden">
+            <CardBody className="p-20 text-center">
+              <p className="text-secondary/60 animate-pulse">Memuat data...</p>
+            </CardBody>
+          </Card>
+        ) : (
+          <>
         {/* STEP 1: RINGKASAN DATA - Modern Card Style */}
         <Card className="border-none shadow-xl rounded-[40px] overflow-hidden">
           <div className="bg-secondary px-8 py-4 flex items-center justify-between">
@@ -179,24 +349,49 @@ export function PaymentPage() {
               <label className="relative flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-white/20 rounded-[30px] hover:bg-white/10 transition-all cursor-pointer group">
                 <div className="flex flex-col items-center">
                   <Upload
-                    className={`mb-2 transition-colors ${
-                      file ? "text-primary" : "text-white/40"
-                    }`}
+                    className={`mb-2 transition-colors ${uploading ? "animate-pulse text-primary" : file ? "text-primary" : "text-white/40"
+                      }`}
                     size={28}
                   />
                   <p className="text-sm font-bold text-white/80 px-4 text-center truncate max-w-[200px]">
-                    {file ? file.name : "Pilih File Gambar"}
+                    {uploading ? "Mengupload..." : file ? file.name : "Pilih File Gambar"}
                   </p>
+                  {uploadedUrl && (
+                    <p className="text-xs text-primary mt-1">✓ File berhasil diupload</p>
+                  )}
                 </div>
                 <input
                   type="file"
                   className="hidden"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  disabled={uploading}
+                  onChange={async (e) => {
+                    const selectedFile = e.target.files?.[0] || null;
+                    if (!selectedFile) return;
+                    
+                    // Validate file size (max 10MB)
+                    if (selectedFile.size > 10 * 1024 * 1024) {
+                      addToast({
+                        title: "Ukuran file terlalu besar",
+                        description: `Ukuran maksimal 10MB. File Anda: ${(selectedFile.size / (1024 * 1024)).toFixed(2)}MB`,
+                        color: "danger",
+                      });
+                      return;
+                    }
+                    
+                    setFile(selectedFile);
+                    const url = await uploadFile(selectedFile);
+                    if (url) {
+                      setUploadedUrl(url);
+                    }
+                  }}
                 />
               </label>
 
               <Button
-                isDisabled={!file}
+                isDisabled={!uploadedUrl || submitting}
+                isLoading={submitting}
+                onPress={handleSubmit}
                 className="w-full bg-primary text-white font-black py-7 rounded-2xl text-lg shadow-xl shadow-black/20"
                 startContent={<CheckCircle2 size={20} />}
               >
@@ -205,6 +400,8 @@ export function PaymentPage() {
             </div>
           </CardBody>
         </Card>
+          </>
+        )}
       </div>
     </Layout>
   );
