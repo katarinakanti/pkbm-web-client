@@ -8,6 +8,7 @@ import { Card, CardBody, Chip, Button, Divider } from "@heroui/react";
 import {
   Timer,
   CheckCircle2,
+  XCircle,
   MapPin,
   Clock,
   FileText,
@@ -17,6 +18,8 @@ import {
   Mail,
   ChevronRight,
   Download,
+  AlertCircle,
+  CreditCard,
 } from "lucide-react";
 import { Layout } from "../../components/layout/Layout";
 import { Link } from "react-router-dom";
@@ -26,8 +29,6 @@ export function UserDetailsPage() {
   const location = useLocation();
 
   const [application, setApplication] = useState<Application | null>(null);
-
-  // Contoh Data Review (will be replaced by API data)
   const [userData, setUserData] = useState({
     nama: "-",
     paket: "-",
@@ -48,7 +49,6 @@ export function UserDetailsPage() {
       if (!authHeader) return;
 
       try {
-        // Fetch application and applicants in parallel
         const [res, applicants] = await Promise.all([
           AxiosClient.userGetUserApplicationById({
             headers: { authorization: authHeader },
@@ -61,7 +61,6 @@ export function UserDetailsPage() {
 
         if (res) {
           setApplication(res);
-          // lookup applicant fullname by id_user_applicant
           const found = applicants.find((a) => a.id === res.id_user_applicant);
           const fullname =
             found?.fullname || res.otm_id_user_applicant?.fullname || "-";
@@ -77,18 +76,17 @@ export function UserDetailsPage() {
                 ? "Paket C (Setara SMA)"
                 : "-",
             nisn: res.nisn || "-",
-            jadwalTatapMuka: "-",
-            lokasi: "-",
+            jadwalTatapMuka: "Akan diinfokan", // Contoh field jadwal
+            lokasi: "Kampus Utama", // Contoh field lokasi
             email: res.parent_email || "-",
             phone: res.parent_phone || "-",
           });
         }
       } catch (err) {
-        console.error("Failed to fetch application or applicants", err);
+        console.error("Failed to fetch application", err);
       }
     };
 
-    // Prefer route param, fallback to query ?id=...
     const idFromParam = params.id;
     if (idFromParam) {
       fetchById(idFromParam);
@@ -99,18 +97,38 @@ export function UserDetailsPage() {
     if (idFromQuery) fetchById(idFromQuery);
   }, [params.id, location.search]);
 
-  // (No countdown used — keep simple for now)
+  // DERIVE STATUS LOGIC (Urutan Sangat Penting)
+  const getStatus = () => {
+    if (!application) return "submitted";
 
-  // Derive status into three explicit states: 'submitted', 'verified', 'approved'
-  const displayStatus = application
-    ? application.status_application === "SUBMITTED"
-      ? "submitted"
-      : application.status_application === "VERIFIED"
-      ? application.payment_status === true
-        ? "approved"
-        : "verified"
-      : "submitted"
-    : "submitted";
+    // 1. REJECTED: Jika status aplikasi ditolak OR verifikasi pembayaran ditolak
+    if (
+      application.status_application === "REJECTED" ||
+      application.payment_verification_status === false
+    ) {
+      return "rejected";
+    }
+    // 2. ACCEPTED: Jika pembayaran sudah diverifikasi admin (TRUE)
+    if (application.payment_verification_status === true) {
+      return "accepted";
+    }
+    // 3. WAITING VERIFICATION: User sudah upload bukti (payment_status true) tapi admin belum verifikasi (null)
+    if (
+      application.payment_status === true &&
+      (application.payment_verification_status === null ||
+        application.payment_verification_status === undefined)
+    ) {
+      return "payment_pending_verification";
+    }
+    // 4. VERIFIED: Berkas oke, tapi user belum bayar/upload bukti
+    if (application.status_application === "VERIFIED") {
+      return "verified";
+    }
+    // 5. DEFAULT: Baru upload berkas (waiting announcement)
+    return "submitted";
+  };
+
+  const displayStatus = getStatus();
 
   return (
     <Layout parentClassName="bg-background-light min-h-screen">
@@ -126,26 +144,75 @@ export function UserDetailsPage() {
           <Chip
             variant="shadow"
             color={
-              displayStatus === "approved"
+              displayStatus === "accepted"
                 ? "success"
-                : displayStatus === "verified"
-                ? "primary"
-                : "warning"
+                : displayStatus === "rejected"
+                ? "danger"
+                : displayStatus === "submitted"
+                ? "warning"
+                : "primary"
             }
             className="text-white font-bold px-6 py-4 h-10 text-lg uppercase tracking-wider"
           >
-            {displayStatus === "approved"
+            {displayStatus === "accepted"
               ? "Diterima"
+              : displayStatus === "payment_pending_verification"
+              ? "Verifikasi Bayar"
               : displayStatus === "verified"
               ? "Terverifikasi"
+              : displayStatus === "rejected"
+              ? "Ditolak / Revisi"
               : "Diajukan"}
           </Chip>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
-          {/* KIRI: Pengumuman & Jadwal */}
           <div className="md:col-span-2 space-y-8">
-            {displayStatus === "submitted" ? (
+            {/* CASE 1: REJECTED */}
+            {displayStatus === "rejected" && (
+              <Card className="bg-white rounded-[40px] p-4 shadow-xl border-t-8 border-red-500 overflow-hidden">
+                <CardBody className="p-8 md:p-12 space-y-8">
+                  <div className="flex flex-col md:flex-row gap-8 items-center">
+                    <div className="bg-red-50 p-6 rounded-full text-red-500">
+                      <XCircle size={64} />
+                    </div>
+                    <div className="space-y-2 text-center md:text-left">
+                      <h2 className="text-3xl font-black text-secondary">
+                        Perlu Perbaikan
+                      </h2>
+                      <p className="text-secondary/60 font-medium text-lg">
+                        Ada data atau bukti pembayaran yang tidak sesuai.
+                      </p>
+                    </div>
+                  </div>
+                  {application?.notes && (
+                    <div className="p-6 bg-red-50 border border-red-100 rounded-3xl">
+                      <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-1">
+                        Catatan Admin:
+                      </p>
+                      <p className="text-red-700 font-bold italic text-lg leading-relaxed">
+                        "{application.notes}"
+                      </p>
+                    </div>
+                  )}
+                  <Button
+                    as={Link}
+                    to={
+                      application
+                        ? `/update-application/${application.id}`
+                        : "/update-application"
+                    }
+                    className="w-full bg-red-500 text-white font-black h-16 rounded-2xl text-lg shadow-xl shadow-red-200"
+                    endContent={<ChevronRight size={20} />}
+                  >
+                    Perbaiki Sekarang
+                  </Button>
+                </CardBody>
+              </Card>
+            )}
+
+            {/* CASE 2: SUBMITTED (Waiting Announcement) */}
+            {displayStatus === "submitted" && (
               <Card className="bg-secondary text-white rounded-[40px] p-4 shadow-2xl overflow-hidden relative border-none">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full -mr-16 -mt-16 blur-3xl" />
                 <CardBody className="items-center text-center p-10 space-y-6">
@@ -153,51 +220,78 @@ export function UserDetailsPage() {
                     <Timer size={48} className="text-primary" />
                   </div>
                   <div className="space-y-2">
-                    <h2 className="text-2xl font-bold">Pengumuman Seleksi</h2>
+                    <h2 className="text-2xl font-bold">Menunggu Pengumuman</h2>
                     <p className="text-white/70">
-                      Berkas Anda sedang dalam proses peninjauan oleh tim admin
-                      PKBM Budiman Drestanta.
+                      Berkas pendaftaran Anda sedang dalam tahap seleksi
+                      administrasi oleh tim PKBM.
                     </p>
                   </div>
-                  {/* <div className="text-4xl md:text-5xl font-black tracking-tighter text-primary bg-white/5 px-8 py-4 rounded-3xl border border-white/10">
-                    {formatTime(timeLeft)}
-                  </div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-white/40 font-bold">
-                    Waktu Estimasi Hasil Keluar
-                  </p> */}
                 </CardBody>
               </Card>
-            ) : displayStatus === "verified" ? (
+            )}
+
+            {/* CASE 3: VERIFIED (Needs Payment) */}
+            {displayStatus === "verified" && (
               <Card className="bg-white rounded-[40px] p-4 shadow-xl border-t-8 border-primary overflow-hidden">
                 <CardBody className="p-8 md:p-12 space-y-8">
                   <div className="flex flex-col md:flex-row gap-8 items-center">
                     <div className="bg-primary/10 p-6 rounded-full text-primary">
-                      <CheckCircle2 size={64} />
+                      <CreditCard size={64} />
                     </div>
                     <div className="space-y-2 text-center md:text-left">
                       <h2 className="text-3xl font-black text-secondary">
-                        Terverifikasi!
+                        Berkas Terverifikasi!
                       </h2>
                       <p className="text-secondary/60 font-medium text-lg">
-                        Pendaftaran Anda telah terverifikasi. Lanjutkan dengan
-                        melunaskan biaya pendaftaran untuk menyelesaikan proses
-                        pendaftaran.
+                        Langkah terakhir: Silakan lakukan pembayaran biaya
+                        pendaftaran untuk menjadi siswa resmi.
                       </p>
                     </div>
                   </div>
-
                   <Button
                     as={Link}
                     to={`/payment?id=${application?.id}`}
                     className="w-full bg-primary text-white font-black h-16 rounded-2xl text-lg shadow-xl shadow-primary/20"
                     endContent={<ChevronRight size={20} />}
                   >
-                    Lunaskan Pembayaran
+                    Bayar Sekarang
                   </Button>
                 </CardBody>
               </Card>
-            ) : (
-              <Card className="bg-white rounded-[40px] p-4 shadow-xl border-t-8 border-accent border-none overflow-hidden">
+            )}
+
+            {/* CASE 4: PAYMENT PENDING VERIFICATION */}
+            {displayStatus === "payment_pending_verification" && (
+              <Card className="bg-white rounded-[40px] p-4 shadow-xl border-t-8 border-warning overflow-hidden">
+                <CardBody className="p-8 md:p-12 space-y-8">
+                  <div className="flex flex-col md:flex-row gap-8 items-center">
+                    <div className="bg-warning/10 p-6 rounded-full text-warning">
+                      <Timer size={64} />
+                    </div>
+                    <div className="space-y-2 text-center md:text-left">
+                      <h2 className="text-3xl font-black text-secondary">
+                        Verifikasi Pembayaran
+                      </h2>
+                      <p className="text-secondary/60 font-medium text-lg">
+                        Bukti pembayaran telah kami terima. Admin akan
+                        memverifikasi dalam waktu maksimal 1x24 jam.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="p-4 bg-zinc-50 rounded-2xl flex items-center gap-3">
+                    <AlertCircle size={20} className="text-zinc-400" />
+                    <p className="text-sm text-zinc-500 font-medium">
+                      Mohon cek halaman ini secara berkala untuk info
+                      selanjutnya.
+                    </p>
+                  </div>
+                </CardBody>
+              </Card>
+            )}
+
+            {/* CASE 5: ACCEPTED / FINAL */}
+            {displayStatus === "accepted" && (
+              <Card className="bg-white rounded-[40px] p-4 shadow-xl border-t-8 border-accent overflow-hidden">
                 <CardBody className="p-8 md:p-12 space-y-8">
                   <div className="flex flex-col md:flex-row gap-8 items-center">
                     <div className="bg-accent/10 p-6 rounded-full text-accent">
@@ -208,61 +302,46 @@ export function UserDetailsPage() {
                         Selamat, {userData.nama}!
                       </h2>
                       <p className="text-secondary/60 font-medium text-lg">
-                        Anda telah resmi menjadi bagian dari keluarga besar
+                        Anda telah resmi menjadi bagian dari keluarga besar PKBM
                         Budiman Drestanta.
                       </p>
                     </div>
                   </div>
-
                   <Divider />
-
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="bg-background-light p-6 rounded-3xl border border-secondary/5 space-y-4">
+                  {/* <div className="grid md:grid-cols-2 gap-6">
+                    <div className="bg-background-light p-6 rounded-3xl border border-secondary/5 space-y-2">
                       <div className="flex items-center gap-2 text-primary font-bold">
-                        <Clock size={20} /> Jadwal Tatap Muka
+                        <Clock size={18} /> Jadwal Belajar
                       </div>
                       <p className="text-xl font-black text-secondary">
                         {userData.jadwalTatapMuka}
                       </p>
                     </div>
-                    <div className="bg-background-light p-6 rounded-3xl border border-secondary/5 space-y-4">
+                    <div className="bg-background-light p-6 rounded-3xl border border-secondary/5 space-y-2">
                       <div className="flex items-center gap-2 text-primary font-bold">
-                        <MapPin size={20} /> Lokasi Ruangan
+                        <MapPin size={18} /> Lokasi
                       </div>
                       <p className="text-xl font-black text-secondary">
                         {userData.lokasi}
                       </p>
                     </div>
-                  </div>
-
+                  </div> */}
                   <Button
-                    as={Link}
-                    to={
-                      displayStatus === "approved"
-                        ? "#"
-                        : displayStatus === "verified"
-                        ? "/payment"
-                        : "/enroll"
-                    }
                     className="w-full bg-secondary text-white font-black h-16 rounded-2xl text-lg shadow-xl shadow-secondary/20"
                     endContent={<Download size={20} />}
                   >
-                    {displayStatus === "approved"
-                      ? "Unduh Kartu Siswa"
-                      : displayStatus === "verified"
-                      ? "Lunaskan Biaya Pendaftaran"
-                      : "Lengkapi Berkas"}
+                    Unduh Kartu Siswa
                   </Button>
                 </CardBody>
               </Card>
             )}
 
-            {/* REVIEW DATA YANG DIUPLOAD */}
-            <div className="space-y-6">
+            {/* REVIEW DATA SECTION */}
+            <div className="space-y-6 pt-4">
               <h3 className="text-2xl font-bold text-secondary flex items-center gap-3">
-                <FileText className="text-primary" /> Review Data Pendaftaran
+                <FileText className="text-primary" /> Data Pendaftaran
               </h3>
-              <Card className="border-none shadow-sm rounded-[32px]">
+              <Card className="border-none shadow-sm rounded-[32px] bg-white">
                 <CardBody className="p-8 grid md:grid-cols-2 gap-8">
                   {[
                     {
@@ -287,7 +366,7 @@ export function UserDetailsPage() {
                     },
                   ].map((item, i) => (
                     <div key={i} className="space-y-1">
-                      <p className="text-xs text-secondary/40 font-black uppercase tracking-widest flex items-center gap-2">
+                      <p className="text-[10px] text-secondary/40 font-black uppercase tracking-widest flex items-center gap-2">
                         {item.icon} {item.label}
                       </p>
                       <p className="text-secondary font-bold text-lg">
@@ -300,11 +379,9 @@ export function UserDetailsPage() {
             </div>
           </div>
 
-          {/* KANAN: Sidebar Dokumen */}
+          {/* SIDEBAR DOKUMEN */}
           <div className="space-y-6">
-            <h3 className="text-xl font-bold text-secondary">
-              Dokumen Terunggah
-            </h3>
+            <h3 className="text-xl font-bold text-secondary">Dokumen</h3>
             <div className="grid gap-3">
               {[
                 { label: "Kartu Keluarga", url: application?.kk_url },
@@ -312,47 +389,45 @@ export function UserDetailsPage() {
                 { label: "KTP Orang Tua", url: application?.ktp_ortu_url },
                 { label: "Passfoto", url: application?.photo_url },
                 { label: "Selfie", url: application?.selfie_url },
-                { label: "Ijazah Terakhir", url: application?.ijazah_terakhir_url },
+                {
+                  label: "Ijazah Terakhir",
+                  url: application?.ijazah_terakhir_url,
+                },
                 { label: "Raport", url: application?.raport_url },
                 { label: "Surat Pindah", url: application?.surat_pindah_url },
-
               ]
                 .filter((d) => d.url)
-                .map((doc, i) => {
-                  const href = doc.url!.startsWith("http")
-                    ? doc.url!
-                    : `${base_url.replace(/\/$/, "")}${doc.url}`;
-                  return (
-                    <a
-                      key={i}
-                      href={href}
-                      target="_blank"
-                      rel="noreferrer"
-                      download
-                      className="flex items-center justify-between p-4 bg-white rounded-2xl border border-secondary/5 shadow-sm group hover:border-primary transition-colors"
-                    >
-                      <div className="flex items-center gap-3 overflow-hidden">
-                        <FileText
-                          className="text-secondary/20 group-hover:text-primary transition-colors shrink-0"
-                          size={20}
-                        />
-                        <span className="text-sm font-bold text-secondary/70 truncate">
-                          {doc.label}
-                        </span>
-                      </div>
-                      <ChevronRight size={16} className="text-secondary/20" />
-                    </a>
-                  );
-                })}
+                .map((doc, i) => (
+                  <a
+                    key={i}
+                    href={
+                      doc.url!.startsWith("http")
+                        ? doc.url!
+                        : `${base_url}${doc.url}`
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between p-4 bg-white rounded-2xl border border-secondary/5 shadow-sm group hover:border-primary transition-colors"
+                  >
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <FileText
+                        className="text-secondary/20 group-hover:text-primary shrink-0"
+                        size={20}
+                      />
+                      <span className="text-sm font-bold text-secondary/70 truncate">
+                        {doc.label}
+                      </span>
+                    </div>
+                    <ChevronRight size={16} className="text-secondary/20" />
+                  </a>
+                ))}
             </div>
-
             <div className="p-6 bg-primary/5 rounded-[32px] border border-primary/10">
               <h4 className="font-bold text-secondary text-sm mb-2">
                 Bantuan?
               </h4>
               <p className="text-xs text-secondary/60 leading-relaxed mb-4">
-                Jika terdapat kesalahan data pada review di samping, segera
-                hubungi admin melalui layanan pengaduan.
+                Hubungi admin PKBM jika ada kesalahan data.
               </p>
               <Button
                 as={Link}
@@ -365,8 +440,6 @@ export function UserDetailsPage() {
                 Chat Admin
               </Button>
             </div>
-
-            {/* (removed testing button) */}
           </div>
         </div>
       </div>
