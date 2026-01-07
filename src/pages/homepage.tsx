@@ -39,7 +39,7 @@ export function HomePage() {
             </p>
             <Button
               as={Link}
-              to="/login"
+              to="/enroll"
               size="lg"
               className="bg-primary text-white font-bold rounded-full px-10 py-7 text-xl shadow-lg hover:scale-105 transition-transform"
             >

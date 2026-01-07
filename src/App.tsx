@@ -29,13 +29,23 @@ export default function App() {
     if (!token) {
       return { user: null };
     }
-    const [user] = (await Promise.all([
-      await AxiosClient.getProfile({
-        headers: { authorization: UserUtility.getAuthHeader() },
-      }),
-    ])) as any;
+    
+    try {
+      const [user] = (await Promise.all([
+        await AxiosClient.getProfile({
+          headers: { authorization: UserUtility.getAuthHeader() },
+        }),
+      ])) as any;
 
-    return { user };
+      return { user };
+    } catch (err: any) {
+      // If JWT is malformed or invalid, clear the token and return null
+      if (err?.response?.status === 401 || err?.response?.status === 500) {
+        console.error('Invalid token, clearing auth:', err?.response?.data);
+        UserUtility.removeToken();
+      }
+      return { user: null };
+    }
   }
 
   return (
