@@ -1,6 +1,6 @@
 import { Link, useLoaderData, useNavigate } from "react-router";
 import { AlignJustify } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
   Dropdown,
@@ -10,6 +10,7 @@ import {
 } from "@heroui/react";
 import { User } from "../../api/model/table/User";
 import { UserUtility } from "../../utility";
+import { createPortal } from "react-dom";
 
 export interface HeaderProps {
   noPaddingHorizontal?: boolean;
@@ -23,6 +24,18 @@ export function Header(props: HeaderProps) {
   // console.log(data)
   const user: User = data?.user;
   const navigate = useNavigate();
+
+  // Lock body scroll when sidebar is open
+  useEffect(() => {
+    if (open_sidebar) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [open_sidebar]);
 
   function logout() {
     UserUtility.removeToken();
@@ -56,168 +69,126 @@ export function Header(props: HeaderProps) {
           </div>
         </div>
       </Link>
-      <div
-        onClick={() => {
-          setOpenSidebar(false);
-        }}
-        className={`
-          fixed ${
-            open_sidebar ? "opacity-100" : "opacity-0 pointer-events-none"
-          } left-0 transition transition-all top-0 w-screen h-screen bg-[#0005]
-          md:relative md:w-auto md:h-auto md:flex-1 md:flex md:opacity-100 md:pointer-events-auto md:bg-transparent
-        `}
-      >
+      
+      {/* DESKTOP MENU - Always visible on desktop */}
+      <div className="hidden md:flex items-center justify-center flex-1 gap-2">
+        {[
+          { label: "Tentang Kami", path: "/tentang-kami" },
+          { label: "Program", path: "/program" },
+          { label: "Admisi", path: "/admisi" },
+          { label: "Kontak", path: "/kontak" },
+        ].map((item) => (
+          <Button
+            key={item.path}
+            variant="light"
+            className={`font-bold transition-colors text-secondary hover:text-primary`}
+            onPress={() => navigate(item.path)}
+          >
+            {item.label}
+          </Button>
+        ))}
+      </div>
+
+      {/* DESKTOP USER SECTION */}
+      <div className="hidden md:flex items-center gap-3">
+        {user && (
+          <>
+            <Dropdown placement="bottom-end">
+              <DropdownTrigger>
+                <Button
+                  variant="light"
+                  className="text-[15px] font-medium text-primary hover:underline shadow-none bg-transparent"
+                >
+                  Hi, {user?.fullname}!
+                </Button>
+              </DropdownTrigger>
+
+              <DropdownMenu aria-label="User menu">
+                <DropdownItem
+                  key="applications"
+                  onPress={() => navigate("/applications")}
+                >
+                  Applications
+                </DropdownItem>
+
+                <DropdownItem
+                  key="logout"
+                  className="text-danger"
+                  onPress={logout}
+                >
+                  Logout
+                </DropdownItem>
+              </DropdownMenu>
+            </Dropdown>
+            <div className="h-8 w-px bg-zinc-300" />
+            <div onClick={logout} className="cursor-pointer">
+              <img className="w-5 object-contain" src={"/logout.svg"} />
+            </div>
+            <div className="h-8 w-px bg-zinc-300" />
+          </>
+        )}
+        {!user && (
+          <Button
+            as={Link}
+            to={"/login"}
+            className="rounded-full bg-primary text-white"
+          >
+            Login/Register
+          </Button>
+        )}
+      </div>
+
+      {/* MOBILE MENU TOGGLE */}
+      <AlignJustify
+        onClick={() => setOpenSidebar(true)}
+        size={32}
+        className="md:hidden cursor-pointer"
+      />
+
+      {/* MOBILE SIDEBAR - Using Portal for complete isolation */}
+      {open_sidebar && createPortal(
         <div
-          onClick={(e) => {
-            e.stopPropagation();
-          }}
-          className={`
-            ${
-              open_sidebar ? "translate-x-0" : "translate-x-[-100%]"
-            } transition transition-transform w-[80%] flex flex-col gap-4 h-full overflow-y-auto p-6 py-6 bg-white
-            ${
-              open_sidebar ? "" : "md:translate-x-0"
-            } md:w-auto md:flex-row md:flex-1 md:py-0 md:px-0 md:bg-transparent
-          `}
+          onClick={() => setOpenSidebar(false)}
+          className="fixed inset-0 z-[9999] bg-black/30 md:hidden"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
         >
-          <Link
-            to={"/"}
-            className={`
-              text-2xl font-medium text-primary
-              md:hidden
-            `}
-          >
-            <img className="object-contain h-9" src={"/logoBudiman.png"} />
-          </Link>
-          
-          {/* MOBILE MENU */}
-          <div className="flex flex-col gap-2 py-4 md:hidden">
-            {[
-              { label: "Tentang Kami", path: "/tentang-kami" },
-              { label: "Program", path: "/program" },
-              { label: "Admisi", path: "/admisi" },
-              { label: "Kontak", path: "/kontak" },
-            ].map((item) => (
-              <Button
-                key={item.path}
-                variant="light"
-                className="font-bold text-secondary hover:text-primary justify-start"
-                onPress={() => {
-                  navigate(item.path);
-                  setOpenSidebar(false);
-                }}
-              >
-                {item.label}
-              </Button>
-            ))}
-          </div>
-          
-          {/* DESKTOP MENU */}
-          <div className="hidden md:flex items-center justify-center flex-1 gap-2">
-            {[
-              { label: "Tentang Kami", path: "/tentang-kami" },
-              { label: "Program", path: "/program" },
-              { label: "Admisi", path: "/admisi" },
-              { label: "Kontak", path: "/kontak" },
-            ].map((item) => (
-              <Button
-                key={item.path}
-                variant="light"
-                className={`font-bold transition-colors text-secondary hover:text-primary`}
-                onPress={() => navigate(item.path)}
-              >
-                {item.label}
-              </Button>
-            ))}
-          </div>
-          {/* HEADER MOBILE */}
-          {/* <div
-            className={`
-            flex flex-col gap-4 py-4 md:hidden
-          `}
-          >
-            {[
-              ["Temukan Dokter", "/doctors"],
-              ["Layanan", "/services"],
-              ["Artikel", "/articles"],
-              ["Karir", "/career"],
-              ["Kontak", "/contact"],
-              ["Karir", "/career"],
-            ].map(([label, href], i: number) => (
-              <Link className="text-[15px]" key={i} to={href}>
-                {label}
-              </Link>
-            ))}
-          </div> */}
           <div
-            className={`
-            flex flex-col items-center gap-2
-            md:flex-row md:gap-3
-          `}
+            onClick={(e) => e.stopPropagation()}
+            className="fixed left-0 top-0 bottom-0 w-[80%] bg-white shadow-2xl overflow-y-auto"
+            style={{ position: 'fixed' }}
           >
-            {user && (
-              <div
-                className={`
-              hidden
-              md:block md:flex md:items-center md:gap-3
-            `}
-              >
-                <Dropdown placement="bottom-end">
-                  <DropdownTrigger>
-                    <Button
-                      variant="light"
-                      className="text-[15px] font-medium text-primary hover:underline shadow-none bg-transparent"
-                    >
-                      Hi, {user?.fullname}!
-                    </Button>
-                  </DropdownTrigger>
+            {/* Mobile Sidebar Header */}
+            <div className="p-6 border-b border-zinc-200">
+              <img className="object-contain h-9" src={"/logoBudiman.png"} alt="Logo" />
+            </div>
 
-                  <DropdownMenu aria-label="User menu">
-                    <DropdownItem
-                      key="applications"
-                      onPress={() => navigate("/applications")}
-                    >
-                      Applications
-                    </DropdownItem>
+            {/* Mobile Navigation Links */}
+            <div className="flex flex-col gap-2 p-6">
+              {[
+                { label: "Tentang Kami", path: "/tentang-kami" },
+                { label: "Program", path: "/program" },
+                { label: "Admisi", path: "/admisi" },
+                { label: "Kontak", path: "/kontak" },
+              ].map((item) => (
+                <Button
+                  key={item.path}
+                  variant="light"
+                  className="font-bold text-secondary hover:text-primary justify-start"
+                  onPress={() => {
+                    navigate(item.path);
+                    setOpenSidebar(false);
+                  }}
+                >
+                  {item.label}
+                </Button>
+              ))}
+            </div>
 
-                    <DropdownItem
-                      key="logout"
-                      className="text-danger"
-                      onPress={logout}
-                    >
-                      Logout
-                    </DropdownItem>
-                  </DropdownMenu>
-                </Dropdown>
-                <div className="h-8 w-px bg-zinc-300" />
-                <div onClick={logout} className="cursor-pointer">
-                  <img className="w-5 object-contain" src={"/logout.svg"} />
-                </div>
-                <div className="h-8 w-px bg-zinc-300" />
-              </div>
-            )}
-            {!user && (
-              <Button
-                as={Link}
-                to={"/login"}
-                className={`
-                hidden
-                md:flex md:rounded-full md:bg-primary md:text-white
-              `}
-              >
-                Login/Register
-              </Button>
-            )}
-
-            <div
-              className={`
-              w-full
-              md:hidden
-            `}
-            >
-              {user && (
+            {/* Mobile User Section */}
+            <div className="p-6 border-t border-zinc-200">
+              {user ? (
                 <div className="flex flex-col gap-3 w-full">
-                  <div className="text-[15px] font-medium text-primary text-center py-2 border-t border-zinc-200">
+                  <div className="text-[15px] font-medium text-primary text-center py-2">
                     Hi, {user?.fullname}!
                   </div>
                   <Button
@@ -242,27 +213,21 @@ export function Header(props: HeaderProps) {
                     Logout
                   </Button>
                 </div>
-              )}
-              {!user && (
-                <div className="w-full">
-                  <Button
-                    as={Link}
-                    to={"/login"}
-                    className="rounded-full bg-primary text-white w-full !h-[48px]"
-                  >
-                    Login/Register
-                  </Button>
-                </div>
+              ) : (
+                <Button
+                  as={Link}
+                  to={"/login"}
+                  className="rounded-full bg-primary text-white w-full !h-[48px]"
+                >
+                  Login/Register
+                </Button>
               )}
             </div>
           </div>
-        </div>
-      </div>
-      <AlignJustify
-        onClick={() => setOpenSidebar(true)}
-        size={32}
-        className="md:hidden"
-      />
+        </div>,
+        document.body
+      )}
+
       {/* <ThemeSwitcher /> */}
     </div>
   );
