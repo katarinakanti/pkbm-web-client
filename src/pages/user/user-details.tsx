@@ -74,8 +74,8 @@ export function UserDetailsPage() {
                 ? "Paket C (Setara SMA)"
                 : "-",
             nisn: res.nisn || "-",
-            jadwalTatapMuka: "Akan diinfokan", // Contoh field jadwal
-            lokasi: "Kampus Utama", // Contoh field lokasi
+            jadwalTatapMuka: "Akan diinfokan",
+            lokasi: "Kampus Utama",
             email: res.parent_email || "-",
             phone: res.parent_phone || "-",
           });
@@ -99,30 +99,33 @@ export function UserDetailsPage() {
   const getStatus = () => {
     if (!application) return "submitted";
 
-    // 1. REJECTED: Jika status aplikasi ditolak OR verifikasi pembayaran ditolak
-    if (
-      application.status_application === "REJECTED" ||
-      application.payment_verification_status === false
-    ) {
+    const appStatus = application.status_application?.toUpperCase();
+    const payVerifyStatus = application.payment_verification_status;
+
+    // 1. REJECTED (Prioritas Tertinggi)
+    if (appStatus === "REJECTED" || payVerifyStatus === false) {
       return "rejected";
     }
-    // 2. ACCEPTED: Jika pembayaran sudah diverifikasi admin (TRUE)
-    if (application.payment_verification_status === true) {
+
+    // 2. ACCEPTED (Lunas & Terverifikasi)
+    if (payVerifyStatus === true || appStatus === "APPROVED") {
       return "accepted";
     }
-    // 3. WAITING VERIFICATION: User sudah upload bukti (payment_status true) tapi admin belum verifikasi (null)
+
+    // 3. WAITING VERIFICATION (User sudah bayar, menunggu admin)
     if (
       application.payment_status === true &&
-      (application.payment_verification_status === null ||
-        application.payment_verification_status === undefined)
+      (payVerifyStatus === null || payVerifyStatus === undefined)
     ) {
       return "payment_pending_verification";
     }
-    // 4. VERIFIED: Berkas oke, tapi user belum bayar/upload bukti
-    if (application.status_application === "VERIFIED") {
+
+    // 4. VERIFIED (Berkas OK, Menunggu Pembayaran)
+    if (appStatus === "VERIFIED") {
       return "verified";
     }
-    // 5. DEFAULT: Baru upload berkas (waiting announcement)
+
+    // 5. DEFAULT (Menunggu Pengumuman Berkas)
     return "submitted";
   };
 
@@ -176,10 +179,14 @@ export function UserDetailsPage() {
                     </div>
                     <div className="space-y-2 text-center md:text-left">
                       <h2 className="text-3xl font-black text-secondary">
-                        Perlu Perbaikan
+                        {application?.payment_verification_status === false
+                          ? "Pembayaran Ditolak"
+                          : "Perlu Perbaikan"}
                       </h2>
                       <p className="text-secondary/60 font-medium text-lg">
-                        Ada data atau bukti pembayaran yang tidak sesuai.
+                        {application?.payment_verification_status === false
+                          ? "Bukti pembayaran Anda tidak valid. Mohon unggah ulang bukti yang benar."
+                          : "Mohon maaf, ada data atau berkas yang perlu diperbaiki sesuai catatan admin."}
                       </p>
                     </div>
                   </div>
@@ -195,7 +202,11 @@ export function UserDetailsPage() {
                   )}
                   <Button
                     as={Link}
-                    to={`/enroll`}
+                    to={
+                      application?.payment_verification_status === false
+                        ? "/payment"
+                        : "/enroll"
+                    }
                     className="w-full bg-red-500 text-white font-black h-16 rounded-2xl text-lg shadow-xl shadow-red-200"
                     endContent={<ChevronRight size={20} />}
                   >
@@ -275,8 +286,7 @@ export function UserDetailsPage() {
                   <div className="p-4 bg-zinc-50 rounded-2xl flex items-center gap-3">
                     <AlertCircle size={20} className="text-zinc-400" />
                     <p className="text-sm text-zinc-500 font-medium">
-                      Mohon cek halaman ini secara berkala untuk info
-                      selanjutnya.
+                      Mohon cek berkala untuk info selanjutnya.
                     </p>
                   </div>
                 </CardBody>
@@ -302,24 +312,6 @@ export function UserDetailsPage() {
                     </div>
                   </div>
                   <Divider />
-                  {/* <div className="grid md:grid-cols-2 gap-6">
-                    <div className="bg-background-light p-6 rounded-3xl border border-secondary/5 space-y-2">
-                      <div className="flex items-center gap-2 text-primary font-bold">
-                        <Clock size={18} /> Jadwal Belajar
-                      </div>
-                      <p className="text-xl font-black text-secondary">
-                        {userData.jadwalTatapMuka}
-                      </p>
-                    </div>
-                    <div className="bg-background-light p-6 rounded-3xl border border-secondary/5 space-y-2">
-                      <div className="flex items-center gap-2 text-primary font-bold">
-                        <MapPin size={18} /> Lokasi
-                      </div>
-                      <p className="text-xl font-black text-secondary">
-                        {userData.lokasi}
-                      </p>
-                    </div>
-                  </div> */}
                   <Button
                     className="w-full bg-secondary text-white font-black h-16 rounded-2xl text-lg shadow-xl shadow-secondary/20"
                     endContent={<Download size={20} />}
