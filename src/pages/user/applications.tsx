@@ -284,7 +284,8 @@ export function ApplicationsPage() {
                     ) : app.status === "rejected" ? (
                       <Button
                         as={Link}
-                        to={`/edit-application/${app.id}`}
+                        // to={`/edit-application/${app.id}`}
+                        to={`/enroll`}
                         className="bg-red-500 text-white font-bold rounded-xl py-6 shadow-md shadow-red-200"
                         startContent={<XCircle size={16} />}
                       >
