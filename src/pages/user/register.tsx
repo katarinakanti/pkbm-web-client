@@ -1,12 +1,14 @@
-import {
-  Button,
-  Input,
-  Card,
-  CardBody,
-  addToast,
-} from "@heroui/react";
+import { Button, Input, Card, CardBody, addToast } from "@heroui/react";
 import { Link } from "react-router";
-import { User, Mail, Lock, GraduationCap, ArrowRight, Eye, EyeOff } from "lucide-react";
+import {
+  User,
+  Mail,
+  Lock,
+  GraduationCap,
+  ArrowRight,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { Layout } from "../../components/layout/Layout";
 import { useState } from "react";
 import { AxiosClient } from "../../api/AxiosClient";
@@ -22,8 +24,8 @@ export function RegisterPage() {
     password: "",
   });
 
-
   async function register() {
+    console.log("MY API URL IS:", import.meta.env.VITE_API_URL);
     if (data.password !== re_password) {
       addToast({
         title: "Konfirmasi kata sandi tidak cocok.",
@@ -45,11 +47,15 @@ export function RegisterPage() {
       // UserUtility.setToken(res.token);
       // UserUtility.redirectIfHasLogin("/");
       // UserUtility.redirectIfNotLogin("/login");
-      localStorage.setItem("registrationSuccess", "Registrasi berhasil! Silakan login.");
+      localStorage.setItem(
+        "registrationSuccess",
+        "Registrasi berhasil! Silakan login.",
+      );
       window.location.href = "/login";
     } catch (err: any) {
       addToast({
-        title: err?.response?.data?.toString() ?? err?.message ?? "Unknown Error",
+        title:
+          err?.response?.data?.toString() ?? err?.message ?? "Unknown Error",
       });
     } finally {
       setLoadingSubmit(false);
@@ -102,7 +108,7 @@ export function RegisterPage() {
 
             <form
               className="grid grid-cols-1 md:grid-cols-2 gap-4"
-              onSubmit={e => {
+              onSubmit={(e) => {
                 // console.log("submitted", data)
                 e.preventDefault();
                 register();
@@ -111,7 +117,9 @@ export function RegisterPage() {
               <Input
                 type="text"
                 value={data.fullname}
-                onChange={e => setData(d => ({ ...d, fullname: e.target.value }))}
+                onChange={(e) =>
+                  setData((d) => ({ ...d, fullname: e.target.value }))
+                }
                 label="Nama Lengkap"
                 placeholder="Contoh: Maudy Ayunda"
                 labelPlacement="outside"
@@ -123,7 +131,9 @@ export function RegisterPage() {
               <Input
                 type="email"
                 value={data.email}
-                onChange={e => setData(d => ({ ...d, email: e.target.value }))}
+                onChange={(e) =>
+                  setData((d) => ({ ...d, email: e.target.value }))
+                }
                 label="Email"
                 placeholder="nama@email.com"
                 labelPlacement="outside"
@@ -135,7 +145,9 @@ export function RegisterPage() {
               <Input
                 type="tel"
                 value={data.phone_number}
-                onChange={e => setData(d => ({ ...d, phone_number: e.target.value }))}
+                onChange={(e) =>
+                  setData((d) => ({ ...d, phone_number: e.target.value }))
+                }
                 label="No. WhatsApp"
                 placeholder="0812..."
                 labelPlacement="outside"
@@ -147,7 +159,9 @@ export function RegisterPage() {
                 className="md:col-span-2 font-medium"
                 label="Kata Sandi"
                 value={data.password}
-                onChange={e => setData(d => ({ ...d, password: e.target.value }))}
+                onChange={(e) =>
+                  setData((d) => ({ ...d, password: e.target.value }))
+                }
                 placeholder="Min. 8 Karakter"
                 labelPlacement="outside"
                 startContent={<Lock size={18} className="text-zinc-400" />}
@@ -166,7 +180,7 @@ export function RegisterPage() {
               <Input
                 className="md:col-span-2 font-medium"
                 value={re_password}
-                onChange={e => setRePassword(e.target.value)}
+                onChange={(e) => setRePassword(e.target.value)}
                 label="Konfirmasi Kata Sandi"
                 labelPlacement="outside"
                 startContent={<Lock size={18} className="text-zinc-400" />}
