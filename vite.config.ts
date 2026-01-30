@@ -6,15 +6,15 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    host: '0.0.0.0',
-    port: parseInt(process.env.PORT || '3000'),
+    host: "0.0.0.0",
+    port: parseInt(process.env.PORT || "3000"),
   },
   preview: {
-    host: '0.0.0.0',
-    port: parseInt(process.env.PORT || '3000'),
-    allowedHosts: [
-      'react-web-0loz.onrender.com',
-      '.onrender.com', // Allow all Render subdomains
-    ],
+    host: "0.0.0.0",
+    port: parseInt(process.env.PORT || "3000"),
+    // allowedHosts: [
+    //   'react-web-0loz.onrender.com',
+    //   '.onrender.com', // Allow all Render subdomains
+    // ],
   },
 });
