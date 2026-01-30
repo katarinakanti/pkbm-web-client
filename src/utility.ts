@@ -4,16 +4,18 @@ import moment from "moment";
 // import QRCode from 'qrcode';
 import { User } from "./api/model/table/User";
 
-export const base_url = import.meta.env.VITE_API_URL ?? 'http://localhost:7000';
+export const base_url =
+  import.meta.env.VITE_API_URL ??
+  "https://past-berna-210roomiestudios-19fa2b32.koyeb.app/";
 
 export interface LoaderData {
   user: User | null;
 }
 
 export namespace UserUtility {
-  // export const User 
+  // export const User
   export function getToken(): string {
-    return localStorage.getItem('webtoken') as string;
+    return localStorage.getItem("webtoken") as string;
   }
 
   export function getAuthHeader(): string {
@@ -21,25 +23,23 @@ export namespace UserUtility {
   }
 
   export function setToken(webtoken: string) {
-    localStorage.setItem('webtoken', webtoken);
+    localStorage.setItem("webtoken", webtoken);
   }
 
   export function removeToken() {
-    localStorage.removeItem('webtoken');
+    localStorage.removeItem("webtoken");
   }
 
-  export function getUserType() {
+  export function getUserType() {}
 
-  }
-
-  export function redirectIfHasLogin(to: string = '/') {
+  export function redirectIfHasLogin(to: string = "/") {
     // console.log("redirect to /")
     if (getToken()) {
       window.location.href = to;
     }
   }
 
-  export function redirectIfNotLogin(to: string = '/login') {
+  export function redirectIfNotLogin(to: string = "/login") {
     // console.log("redirect to login")
     if (!getToken()) {
       window.location.href = to;
@@ -81,5 +81,9 @@ export function getNearestDayWeekday(weekday_number: number): Date {
 // }
 
 export function formatRp(num: number) {
-  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(num);
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(num);
 }
